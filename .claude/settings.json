@@ -1,0 +1,19 @@
+{
+  "enabledPlugins": {
+    "dotnet@dotnet-agent-skills": true,
+    "dotnet-aspnetcore@dotnet-agent-skills": true,
+    "dotnet-blazor@dotnet-agent-skills": true,
+    "dotnet-data@dotnet-agent-skills": true,
+    "dotnet-test@dotnet-agent-skills": true,
+    "dotnet11@dotnet-agent-skills": true,
+    "mudblazor@dotnet-agent-skills": true
+  },
+  "extraKnownMarketplaces": {
+    "dotnet-agent-skills": {
+      "source": {
+        "source": "github",
+        "repo": "CarlNaddy/claude-plugins-dotnet"
+      }
+    }
+  }
+}

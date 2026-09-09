@@ -1,0 +1,13 @@
+@* Anonymous hit on an [Authorize] page lands in AuthorizeRouteView's
+   NotAuthorized template (Routes.razor), which renders this to bounce to
+   login with a returnUrl (parity plan P3.5). *@
+@inject NavigationManager NavigationManager
+
+@code {
+    protected override void OnInitialized()
+    {
+        NavigationManager.NavigateTo(
+            $"Account/Login?returnUrl={Uri.EscapeDataString(NavigationManager.Uri)}",
+            forceLoad: true);
+    }
+}

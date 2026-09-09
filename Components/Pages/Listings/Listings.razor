@@ -1,0 +1,108 @@
+@page "/listings"
+@using DotnetAgenticStarterkit.Features.Listings
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject ListingPhotoService PhotoService
+@inject NavigationManager Nav
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>Listings</PageTitle>
+
+<div class="d-flex align-center gap-4 mb-4">
+    <MudText Typo="Typo.h4">Listings</MudText>
+    <MudSpacer />
+    <MudTextField @bind-Value="_search" Placeholder="Search title or city" Margin="Margin.Dense"
+                  Variant="Variant.Outlined" Adornment="Adornment.Start"
+                  AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Small"
+                  Immediate="true" Clearable="true" Class="flex-grow-1" Style="max-width:320px" />
+    <AuthorizeView Policy="ListingsWriter">
+        <MudButton StartIcon="@Icons.Material.Filled.Add" Variant="Variant.Filled" Color="Color.Primary"
+                   Href="/listings/new">New listing</MudButton>
+    </AuthorizeView>
+</div>
+
+<MudDataGrid T="Listing" Items="_listings" Loading="_loading" Dense="true" Hover="true"
+             SortMode="SortMode.Multiple" Filterable="true" QuickFilter="QuickFilter">
+    <Columns>
+        <PropertyColumn Property="x => x.Title" Title="Title" />
+        <PropertyColumn Property="x => x.City" Title="City" />
+        <PropertyColumn Property="x => x.Price" Title="Price" Format="C0" />
+        <PropertyColumn Property="x => x.Bedrooms" Title="Beds" />
+        <PropertyColumn Property="x => x.Status" Title="Status" />
+        <PropertyColumn Property="x => x.ListedOn" Title="Listed" Format="yyyy-MM-dd" />
+        <TemplateColumn Title="" Sortable="false" Filterable="false">
+            <CellTemplate>
+                <div class="d-flex">
+                    <MudIconButton Icon="@Icons.Material.Filled.Visibility" Size="Size.Small"
+                                   aria-label="Details"
+                                   OnClick="@(() => Nav.NavigateTo($"/listings/{context.Item.Id}"))" />
+                    <AuthorizeView Policy="ListingsWriter" Context="auth">
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
+                                       aria-label="Edit"
+                                       OnClick="@(() => Nav.NavigateTo($"/listings/{context.Item.Id}/edit"))" />
+                    </AuthorizeView>
+                    <AuthorizeView Policy="ListingsAdmin" Context="auth">
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
+                                       aria-label="Delete"
+                                       OnClick="@(() => DeleteAsync(context.Item))" />
+                    </AuthorizeView>
+                </div>
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+    <NoRecordsContent>
+        <MudText Class="pa-4">No listings yet. Create the first one.</MudText>
+    </NoRecordsContent>
+    <PagerContent>
+        <MudDataGridPager T="Listing" />
+    </PagerContent>
+</MudDataGrid>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthState { get; set; }
+
+    private IReadOnlyList<Listing> _listings = [];
+    private bool _loading = true;
+    private string _search = "";
+
+    protected override async Task OnInitializedAsync() => await ReloadAsync();
+
+    private async Task ReloadAsync()
+    {
+        _loading = true;
+        await using var db = await DbFactory.CreateDbContextAsync();
+        _listings = await db.Listings.AsNoTracking().OrderByDescending(l => l.ListedOn).ToListAsync();
+        _loading = false;
+    }
+
+    private bool QuickFilter(Listing l) =>
+        string.IsNullOrWhiteSpace(_search)
+        || l.Title.Contains(_search, StringComparison.OrdinalIgnoreCase)
+        || l.City.Contains(_search, StringComparison.OrdinalIgnoreCase);
+
+    private async Task DeleteAsync(Listing listing)
+    {
+        if (!await AuthState.IsInRoleAsync("Admin"))
+        {
+            Snackbar.Add("You do not have permission to delete listings.", Severity.Error);
+            return;
+        }
+
+        var parameters = new DialogParameters<DeleteListingDialog> { { x => x.Title, listing.Title } };
+        var dialog = await DialogService.ShowAsync<DeleteListingDialog>("Delete listing", parameters);
+        var result = await dialog.Result;
+
+        if (result is null || result.Canceled)
+        {
+            return;
+        }
+
+        // P4.4: also deletes the listing's photo file, if any, and invalidates
+        // the API's cached reads (P4.3) — see ListingPhotoService.
+        await PhotoService.DeleteListingAsync(listing.Id, default);
+
+        Snackbar.Add("Listing deleted.", Severity.Success);
+        await ReloadAsync();
+    }
+}

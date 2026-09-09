@@ -1,0 +1,91 @@
+@page "/Account/ExternalLogin"
+@attribute [ExcludeFromInteractiveRouting]
+
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Identity
+
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+@inject IdentityRedirectManager RedirectManager
+@inject ILogger<ExternalLogin> Logger
+
+<PageTitle>External sign-in</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">Signing you in…</MudText>
+
+@if (_error is not null)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-4">@_error</MudAlert>
+    <MudLink Href="Account/Login">Back to log in</MudLink>
+}
+
+@code {
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var info = await SignInManager.GetExternalLoginInfoAsync();
+        if (info is null)
+        {
+            _error = "No external login information was found. Please try again.";
+            return;
+        }
+
+        // 1. Already linked → straight in.
+        var signIn = await SignInManager.ExternalLoginSignInAsync(
+            info.LoginProvider, info.ProviderKey, isPersistent: false, bypassTwoFactor: true);
+
+        if (signIn.Succeeded)
+        {
+            Logger.LogInformation(
+                "{Name} signed in with {Provider}.", info.Principal.Identity?.Name, info.LoginProvider);
+            RedirectManager.RedirectTo(ReturnUrl ?? "/");
+            return;
+        }
+
+        if (signIn.IsLockedOut)
+        {
+            _error = "This account is locked out.";
+            return;
+        }
+
+        // 2. Not linked yet — provision or link by the provider-verified email.
+        //    Google / Microsoft verify emails; GitHub's primary email (user:email
+        //    scope) is verified. See CLAUDE.md "Authentication & authorization".
+        var email = info.Principal.FindFirstValue(ClaimTypes.Email);
+        if (string.IsNullOrEmpty(email))
+        {
+            _error = $"{info.ProviderDisplayName} did not return an email address.";
+            return;
+        }
+
+        var user = await UserManager.FindByEmailAsync(email);
+        if (user is null)
+        {
+            user = new ApplicationUser { UserName = email, Email = email, EmailConfirmed = true };
+            var create = await UserManager.CreateAsync(user);
+            if (!create.Succeeded)
+            {
+                _error = "Could not create an account: "
+                    + string.Join(" ", create.Errors.Select(e => e.Description));
+                return;
+            }
+        }
+
+        var link = await UserManager.AddLoginAsync(user, info);
+        if (!link.Succeeded)
+        {
+            _error = "Could not link the external login: "
+                + string.Join(" ", link.Errors.Select(e => e.Description));
+            return;
+        }
+
+        await SignInManager.SignInAsync(user, isPersistent: false, info.LoginProvider);
+        Logger.LogInformation(
+            "{Email} linked {Provider} and signed in.", email, info.LoginProvider);
+        RedirectManager.RedirectTo(ReturnUrl ?? "/");
+    }
+}

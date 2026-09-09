@@ -1,0 +1,12 @@
+### Health checks — mapped directly in Program.cs (P5.4), not their own
+### Endpoints/*.cs file. Public, no auth. The MS-documented split for
+### container orchestrators that probe readiness and liveness differently.
+
+@baseUrl = https://localhost:7105
+
+### Readiness — every check, including the database (AddDbContextCheck)
+GET {{baseUrl}}/health
+
+### Liveness — only "live"-tagged checks, no dependencies (stop the DB
+### container first to see /health go unhealthy while /alive stays healthy)
+GET {{baseUrl}}/alive

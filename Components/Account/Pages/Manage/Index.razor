@@ -1,0 +1,37 @@
+@page "/Account/Manage"
+@attribute [Authorize]
+@attribute [ExcludeFromInteractiveRouting]
+
+@using Microsoft.AspNetCore.Identity
+
+@inject UserManager<ApplicationUser> UserManager
+
+<PageTitle>Your account</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">Your account</MudText>
+
+<MudText><strong>Username:</strong> @_username</MudText>
+<MudText Class="mb-4"><strong>Email:</strong> @_email</MudText>
+
+<form action="Account/Logout" method="post">
+    <AntiforgeryToken />
+    <input type="hidden" name="returnUrl" value="/" />
+    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Outlined">Log out</MudButton>
+</form>
+
+@code {
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    private string? _username;
+    private string? _email;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await UserManager.GetUserAsync(HttpContext.User)
+            ?? throw new InvalidOperationException("Unable to load the current user.");
+
+        _username = await UserManager.GetUserNameAsync(user);
+        _email = await UserManager.GetEmailAsync(user);
+    }
+}

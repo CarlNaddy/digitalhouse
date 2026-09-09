@@ -1,0 +1,110 @@
+@page "/listings/{Id:int}"
+@using DotnetAgenticStarterkit.Features.Listings
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject ListingPhotoService PhotoService
+@inject NavigationManager Nav
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>@(_listing?.Title ?? "Listing")</PageTitle>
+
+@if (_listing is null)
+{
+    @if (_loaded)
+    {
+        <MudAlert Severity="Severity.Error">Listing @Id was not found.</MudAlert>
+        <MudButton Class="mt-4" Href="/listings" Variant="Variant.Text">Back to listings</MudButton>
+    }
+    else
+    {
+        <MudProgressCircular Indeterminate="true" />
+    }
+}
+else
+{
+    <div class="d-flex align-center gap-2 mb-4">
+        <MudText Typo="Typo.h4">@_listing.Title</MudText>
+        <MudChip T="string" Size="Size.Small" Color="StatusColor(_listing.Status)">@_listing.Status</MudChip>
+        <MudSpacer />
+        <AuthorizeView Policy="ListingsWriter">
+            <MudButton Href="@($"/listings/{Id}/edit")" StartIcon="@Icons.Material.Filled.Edit"
+                       Variant="Variant.Filled" Color="Color.Primary">Edit</MudButton>
+        </AuthorizeView>
+        <AuthorizeView Policy="ListingsAdmin">
+            <MudButton OnClick="DeleteAsync" StartIcon="@Icons.Material.Filled.Delete"
+                       Variant="Variant.Outlined" Color="Color.Error">Delete</MudButton>
+        </AuthorizeView>
+    </div>
+
+    @if (_listing.PhotoFileId is { } photoId)
+    {
+        <MudImage Src="@($"/api/files/{photoId}")" Alt="@_listing.Title" Height="240" Class="mb-4 rounded" />
+    }
+
+    <MudPaper Class="pa-4" Elevation="1">
+        <MudSimpleTable Dense="true" Hover="false" Elevation="0">
+            <tbody>
+                <tr><td>Address</td><td>@_listing.Address, @_listing.City</td></tr>
+                <tr><td>Price</td><td>@_listing.Price.ToString("C0")</td></tr>
+                <tr><td>Bedrooms</td><td>@_listing.Bedrooms</td></tr>
+                <tr><td>Bathrooms</td><td>@_listing.Bathrooms</td></tr>
+                <tr><td>Area</td><td>@_listing.FloorAreaSqm m²</td></tr>
+                <tr><td>Listed on</td><td>@_listing.ListedOn.ToString("yyyy-MM-dd")</td></tr>
+                <tr><td>Description</td><td>@(string.IsNullOrWhiteSpace(_listing.Description) ? "—" : _listing.Description)</td></tr>
+            </tbody>
+        </MudSimpleTable>
+    </MudPaper>
+
+    <MudButton Class="mt-4" Href="/listings" StartIcon="@Icons.Material.Filled.ArrowBack"
+               Variant="Variant.Text">Back to listings</MudButton>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthState { get; set; }
+
+    private Listing? _listing;
+    private bool _loaded;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        _listing = await db.Listings.FindAsync(Id);
+        _loaded = true;
+    }
+
+    private static Color StatusColor(ListingStatus status) => status switch
+    {
+        ListingStatus.Active => Color.Success,
+        ListingStatus.UnderOffer => Color.Warning,
+        ListingStatus.Sold => Color.Default,
+        _ => Color.Info,
+    };
+
+    private async Task DeleteAsync()
+    {
+        if (!await AuthState.IsInRoleAsync("Admin"))
+        {
+            Snackbar.Add("You do not have permission to delete listings.", Severity.Error);
+            return;
+        }
+
+        var parameters = new DialogParameters<DeleteListingDialog> { { x => x.Title, _listing!.Title } };
+        var dialog = await DialogService.ShowAsync<DeleteListingDialog>("Delete listing", parameters);
+        var result = await dialog.Result;
+
+        if (result is null || result.Canceled)
+        {
+            return;
+        }
+
+        // P4.4: also deletes the listing's photo file, if any, and invalidates
+        // the API's cached reads (P4.3) — see ListingPhotoService.
+        await PhotoService.DeleteListingAsync(Id, default);
+
+        Snackbar.Add("Listing deleted.", Severity.Success);
+        Nav.NavigateTo("/listings");
+    }
+}

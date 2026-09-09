@@ -1,0 +1,42 @@
+@page "/listings/new"
+@attribute [Authorize(Policy = "ListingsWriter")]
+@using DotnetAgenticStarterkit.Features.Jobs
+@using DotnetAgenticStarterkit.Features.Listings
+@using Hangfire
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject IBackgroundJobClient BackgroundJobs
+@inject ListingQueries ListingQueries
+@inject NavigationManager Nav
+@inject ISnackbar Snackbar
+
+<PageTitle>New listing</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">New listing</MudText>
+
+<MudPaper Class="pa-4" Elevation="1">
+    <ListingEditor Model="_model" SubmitLabel="Create" OnSubmit="CreateAsync"
+                   OnCancel="@(() => Nav.NavigateTo("/listings"))" />
+</MudPaper>
+
+@code {
+    private readonly Listing _model = new();
+
+    private async Task CreateAsync()
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        db.Listings.Add(_model);
+        await db.SaveChangesAsync();
+
+        // Fire-and-forget background job (parity plan P4.1) — the page
+        // doesn't wait on it; ListingJobs.RecordListingCreatedAsync runs on
+        // the Hangfire server, out of this request.
+        BackgroundJobs.Enqueue<ListingJobs>(job => job.RecordListingCreatedAsync(_model.Id, CancellationToken.None));
+
+        // P4.3: the API's cached reads (Endpoints/ListingsApiEndpoints.cs) would
+        // otherwise serve stale data until the cache entry's own expiry.
+        await ListingQueries.InvalidateAsync();
+
+        Snackbar.Add($"Listing \"{_model.Title}\" created.", Severity.Success);
+        Nav.NavigateTo($"/listings/{_model.Id}");
+    }
+}

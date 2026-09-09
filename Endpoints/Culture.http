@@ -1,0 +1,14 @@
+### Culture — Endpoints/CultureEndpoints.cs. Public, no auth, no antiforgery
+### (a plain GET) — writes the .AspNetCore.Culture cookie and redirects. The
+### full-page redirect is what lets a new Blazor Server circuit pick up the
+### culture (see CLAUDE.md's Localization section). Supported cultures: en, de.
+
+@baseUrl = https://localhost:7105
+
+### Switch to German, redirect back to Home
+# @no-redirect
+GET {{baseUrl}}/culture/set?culture=de&redirectUri=/
+
+### Switch to English, redirect to the Listings page
+# @no-redirect
+GET {{baseUrl}}/culture/set?culture=en&redirectUri=/listings

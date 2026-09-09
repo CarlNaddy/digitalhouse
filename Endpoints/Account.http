@@ -1,0 +1,30 @@
+### Account — Endpoints/AccountEndpoints.cs. Real HTTP requests instead of
+### Blazor components because both touch the response before Blazor
+### Server's circuit would start (sign-out, the OAuth challenge redirect —
+### see dotnet-blazor:configure-auth). Neither is runnable as-is: both are
+### form-bound POSTs, so ASP.NET Core's automatic antiforgery validation
+### applies (same as Listings.http's photo upload) — get a session cookie +
+### __RequestVerificationToken from a real browser session first.
+
+@baseUrl = https://localhost:7105
+
+### Sign out — normally posted by the app bar's AccountMenu form.
+# @no-redirect
+POST {{baseUrl}}/Account/Logout
+Content-Type: application/x-www-form-urlencoded
+Cookie: .AspNetCore.Identity.Application={{authCookie}}
+
+__RequestVerificationToken={{csrfToken}}&returnUrl=/
+
+### Start an external-login challenge for one configured provider
+### (google / microsoft / github — only providers with credentials set
+### via user-secrets register at all, see docs/external-login.md). Redirects
+### to the provider, so there's no useful JSON response to inspect here —
+### this is really "click the button on /Account/Login", documented as an
+### HTTP request for completeness.
+# @no-redirect
+POST {{baseUrl}}/Account/PerformExternalLogin
+Content-Type: application/x-www-form-urlencoded
+Cookie: .AspNetCore.Identity.Application={{authCookie}}
+
+__RequestVerificationToken={{csrfToken}}&provider=Google&returnUrl=/

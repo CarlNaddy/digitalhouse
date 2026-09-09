@@ -1,0 +1,93 @@
+@page "/listings/{Id:int}/edit"
+@attribute [Authorize(Policy = "ListingsWriter")]
+@using DotnetAgenticStarterkit.Features.Listings
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject ListingQueries ListingQueries
+@inject ListingPhotoService PhotoService
+@inject NavigationManager Nav
+@inject ISnackbar Snackbar
+
+<PageTitle>Edit listing</PageTitle>
+
+@if (_model is null)
+{
+    @if (_loaded)
+    {
+        <MudAlert Severity="Severity.Error">Listing @Id was not found.</MudAlert>
+        <MudButton Class="mt-4" Href="/listings" Variant="Variant.Text">Back to listings</MudButton>
+    }
+    else
+    {
+        <MudProgressCircular Indeterminate="true" />
+    }
+}
+else
+{
+    <MudText Typo="Typo.h4" GutterBottom="true">Edit: @_model.Title</MudText>
+
+    <MudPaper Class="pa-4 mb-4" Elevation="1">
+        <MudText Typo="Typo.body2" Class="mb-2">Photo</MudText>
+        @if (_model.PhotoFileId is { } photoId)
+        {
+            <MudImage Src="@($"/api/files/{photoId}")" Height="120" Class="mb-2 rounded" />
+        }
+        <InputFile OnChange="OnPhotoSelectedAsync" accept="image/jpeg,image/png" />
+        @if (_photoError is not null)
+        {
+            <MudAlert Severity="Severity.Error" Dense="true" Class="mt-2">@_photoError</MudAlert>
+        }
+    </MudPaper>
+
+    <MudPaper Class="pa-4" Elevation="1">
+        <ListingEditor Model="_model" SubmitLabel="Save changes" OnSubmit="SaveAsync"
+                       OnCancel="@(() => Nav.NavigateTo($"/listings/{Id}"))" />
+    </MudPaper>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Listing? _model;
+    private bool _loaded;
+    private string? _photoError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        _model = await db.Listings.FindAsync(Id);
+        _loaded = true;
+    }
+
+    // P4.4: calls ListingPhotoService directly, not through the minimal-API
+    // endpoint — this component already runs server-side (Interactive
+    // Server), so there's no reason to round-trip through HTTP just to call
+    // the app's own endpoint (see ListingsApiEndpoints.cs).
+    private async Task OnPhotoSelectedAsync(InputFileChangeEventArgs e)
+    {
+        _photoError = null;
+        try
+        {
+            await using var stream = e.File.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
+            var stored = await PhotoService.AttachPhotoAsync(Id, stream, default);
+            _model!.PhotoFileId = stored.Id;
+            Snackbar.Add("Photo uploaded.", Severity.Success);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _photoError = ex.Message;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        db.Listings.Update(_model!);
+        await db.SaveChangesAsync();
+
+        // P4.3: invalidate the API's cached reads — see ListingCreate.razor.
+        await ListingQueries.InvalidateAsync();
+
+        Snackbar.Add("Changes saved.", Severity.Success);
+        Nav.NavigateTo($"/listings/{Id}");
+    }
+}

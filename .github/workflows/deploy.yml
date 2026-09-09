@@ -1,0 +1,72 @@
+# Publish + deploy to Fly.io (rails-parity plan P5.3). Gated on CI (P2.5)
+# passing on main — this workflow doesn't repeat the test job, it waits for
+# the "CI" workflow's own result via workflow_run.
+#
+# Needs, before this can run for real (see docs/deployment.md "P5.3" for the
+# exact commands): a Fly.io app already created, Postgres attached/reachable,
+# every required secret set via `fly secrets set`, and a `FLY_API_TOKEN`
+# repository secret. None of that is this workflow's job — it assumes the
+# app already exists and deploys an image to it.
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  deploy:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Docker/OCI repository names must be lowercase; `github.repository`
+      # ("owner/repo") isn't guaranteed to be (GitHub repo names allow
+      # uppercase and dots — and this repo's own template rename produces
+      # PascalCase project names, e.g. "Contoso.Portal", by design). Compute
+      # the safe form once here and reuse it for both the publish step and
+      # the flyctl --image reference below, so they can never drift apart —
+      # same reasoning as DotnetAgenticStarterkit.csproj's self-lowercasing
+      # ContainerRepository (see docs/deployment.md).
+      - name: Compute the image repository (must be lowercase)
+        id: image
+        run: echo "repository=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      # Same P5.1 SDK container publish used locally — no separate CI-only
+      # build path. Tagged by commit SHA, not `latest`: every deploy
+      # references one exact, reproducible image, never a floating tag.
+      - name: Build + push container image
+        run: >
+          dotnet publish *.csproj -t:PublishContainer -c Release
+          -p:ContainerRegistry=ghcr.io
+          -p:ContainerRepository=${{ steps.image.outputs.repository }}
+          -p:ContainerImageTag=${{ github.event.workflow_run.head_sha }}
+
+      - name: Install flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy to Fly.io
+        run: >
+          flyctl deploy
+          --image ghcr.io/${{ steps.image.outputs.repository }}:${{ github.event.workflow_run.head_sha }}
+          --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

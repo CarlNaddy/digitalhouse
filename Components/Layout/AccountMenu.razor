@@ -1,0 +1,19 @@
+@* Auth links in the app bar (parity plan P3.3). The logout form posts to a
+   minimal API endpoint (Endpoints/AccountEndpoints.cs), not a component, so it
+   works regardless of the calling page's render mode. *@
+
+<AuthorizeView>
+    <Authorized>
+        <MudText Class="mr-2 align-self-center">@context.User.Identity?.Name</MudText>
+        <MudButton Href="Account/Manage" Variant="Variant.Text" Color="Color.Inherit">Account</MudButton>
+        <form action="Account/Logout" method="post">
+            <AntiforgeryToken />
+            <input type="hidden" name="returnUrl" value="/" />
+            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Text" Color="Color.Inherit">Log out</MudButton>
+        </form>
+    </Authorized>
+    <NotAuthorized>
+        <MudButton Href="Account/Login" Variant="Variant.Text" Color="Color.Inherit">Log in</MudButton>
+        <MudButton Href="Account/Register" Variant="Variant.Text" Color="Color.Inherit">Register</MudButton>
+    </NotAuthorized>
+</AuthorizeView>

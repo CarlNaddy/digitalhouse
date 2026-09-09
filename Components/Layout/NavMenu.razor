@@ -1,0 +1,9 @@
+﻿@inject IStringLocalizer<SharedResource> L
+
+<MudNavMenu>
+    <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">@L["Nav_Home"]</MudNavLink>
+    <MudNavLink Href="listings" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Apartment">@L["Nav_Listings"]</MudNavLink>
+    <AuthorizeView>
+        <MudNavLink Href="Account/Manage" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.ManageAccounts">@L["Nav_Account"]</MudNavLink>
+    </AuthorizeView>
+</MudNavMenu>

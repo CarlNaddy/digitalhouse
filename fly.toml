@@ -1,0 +1,51 @@
+# Fly.io app config (rails-parity plan P5.3). The deployed image is built and
+# pushed by .github/workflows/deploy.yml (the P5.1 SDK container publish,
+# ghcr.io-hosted) — not a `[build]` section here, since this repo
+# deliberately has no Dockerfile. See docs/deployment.md "P5.3" for the
+# account-side setup this depends on: creating the app, attaching Postgres,
+# and setting every secret below via `fly secrets set`.
+#
+# `app` below is a placeholder — the lowercased project identifier, same form as
+# compose.yaml's ${APP_IMAGE:-…} fallback. scripts/new-project.sh rewrites it to
+# lower("<NewName>") on rename. Fly app names must also be globally unique, so
+# after `new-project.sh` confirm this value is free (`fly apps create` will
+# reject it otherwise) and change it if needed — it's yours to own from there.
+
+app = "dotnetagenticstarterkit"
+primary_region = "ams"        # Amsterdam, Netherlands
+
+[build]
+  # Deliberately empty. `flyctl deploy` always gets --image explicitly (see
+  # deploy.yml) — a bare `fly deploy` run by hand without --image would
+  # otherwise look for a Dockerfile, which doesn't exist here on purpose.
+
+[deploy]
+  # The app does not auto-migrate on startup — only `dotnet DotnetAgenticStarterkit.dll
+  # seed` does (applies pending migrations, then runs the idempotent sample +
+  # admin seeders; see Data/Seed/SeedCommand.cs). Fly runs this in a temporary
+  # machine, with the app's secrets and DB access, before each release goes
+  # live — the prod equivalent of run-stack.sh's `docker compose run --rm app
+  # seed`. Requires Seed__AdminPassword to be set outside Development, or the
+  # release aborts (Data/Seed/IdentitySeeder.cs).
+  release_command = "seed"
+
+[http_service]
+  internal_port = 8080        # matches the container's ASPNETCORE_HTTP_PORTS default (P5.1)
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0      # scale to zero when idle — costs ~$0 at rest, wakes on request
+
+[[http_service.checks]]
+  interval = "15s"
+  timeout = "5s"
+  grace_period = "10s"
+  method = "GET"
+  path = "/alive"              # liveness only, no DB dependency (P5.4)
+
+[env]
+  ASPNETCORE_ENVIRONMENT = "Production"
+  # ConnectionStrings__Default, Seed__AdminPassword, Email__*,
+  # Authentication__<Provider>__ClientSecret, etc. are deliberately NOT
+  # here — every secret is set with `fly secrets set`, never committed.
+  # See docs/deployment.md.

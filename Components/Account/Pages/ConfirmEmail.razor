@@ -1,0 +1,50 @@
+@page "/Account/ConfirmEmail"
+@attribute [ExcludeFromInteractiveRouting]
+
+@using System.Text
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.WebUtilities
+
+@inject UserManager<ApplicationUser> UserManager
+
+<PageTitle>Confirm email</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">Confirm email</MudText>
+
+@if (_statusMessage is not null)
+{
+    <MudAlert Severity="@(_succeeded ? Severity.Success : Severity.Error)" Class="mb-4">@_statusMessage</MudAlert>
+}
+
+<MudLink Href="Account/Login">Go to log in</MudLink>
+
+@code {
+    [SupplyParameterFromQuery] private string? UserId { get; set; }
+    [SupplyParameterFromQuery] private string? Code { get; set; }
+
+    private string? _statusMessage;
+    private bool _succeeded;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (UserId is null || Code is null)
+        {
+            _statusMessage = "Invalid confirmation link.";
+            return;
+        }
+
+        var user = await UserManager.FindByIdAsync(UserId);
+        if (user is null)
+        {
+            _statusMessage = $"Unable to load user with ID '{UserId}'.";
+            return;
+        }
+
+        var code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(Code));
+        var result = await UserManager.ConfirmEmailAsync(user, code);
+        _succeeded = result.Succeeded;
+        _statusMessage = result.Succeeded
+            ? "Thank you for confirming your email. You can now log in."
+            : "Error confirming your email.";
+    }
+}

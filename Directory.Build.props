@@ -1,0 +1,28 @@
+<Project>
+
+  <!--
+    Solution-wide build settings. Applies to every project in the repo
+    (currently just DotnetAgenticStarterkit.csproj; the test project added in P2.1 will
+    inherit this too). Project-specific settings stay in the .csproj.
+  -->
+
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <!-- Static analysis: .NET analyzers on, warnings are build errors. -->
+  <PropertyGroup>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>Recommended</AnalysisMode>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!--
+      Code-style (IDExxxx) rules are enforced in the IDE and via `dotnet format`,
+      not at build time yet. Flip this to true once the codebase is clean
+      (tracked under P0.5).
+    -->
+    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+
+</Project>

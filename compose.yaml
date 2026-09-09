@@ -1,0 +1,70 @@
+# Local development infrastructure — and, since P5.2, the full stack.
+#   docker compose up -d db mail    # just infra, for `dotnet watch run` on the host
+#   bash scripts/run-stack.sh       # the whole thing in one command (builds + runs `app` too)
+#   docker compose down             # stop (Postgres data survives in the named volume)
+#   docker compose down -v          # stop and wipe the database
+#
+# `app` uses the image `dotnet publish -t:PublishContainer` builds (P5.1,
+# DotnetAgenticStarterkit.csproj) — not a Dockerfile `build:` section, so the image must
+# already exist locally before `docker compose up` includes it; run
+# scripts/run-stack.sh instead of a bare `docker compose up` to get both
+# steps as one command. `run-stack.sh` also sets $APP_IMAGE below, lowercased
+# from the .csproj name to match what DotnetAgenticStarterkit.csproj's ContainerRepository
+# actually builds — a bare `docker compose up` (no $APP_IMAGE) falls back to
+# the template's own literal name, only correct for this repo unrenamed. Dev
+# connection string for the *host* dev loop (`dotnet watch run`) goes in
+# user-secrets (plan P1.3), not here; `app` itself gets its connection string
+# as a plain env var below — fine for local dev, see docs/deployment.md for
+# the prod-secrets story (P5.4).
+
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: DotnetAgenticStarterkit
+      POSTGRES_USER: DotnetAgenticStarterkit
+      POSTGRES_PASSWORD: dev_only_change_me
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U DotnetAgenticStarterkit -d DotnetAgenticStarterkit"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Dev SMTP sink (parity plan P4.2) — catches every outgoing email instead of
+  # delivering it. Web UI at http://localhost:5001 to read what was "sent".
+  # EmailOptions' defaults (Features/Email/EmailOptions.cs — see
+  # docs/email.md) already point at this: localhost:2525, no auth.
+  mail:
+    image: rnwood/smtp4dev:v3
+    restart: unless-stopped
+    ports:
+      - "5001:80"   # web UI
+      - "2525:25"   # SMTP
+
+  # The app itself (parity plan P5.2) — built by scripts/run-stack.sh via
+  # `dotnet publish -t:PublishContainer` (P5.1), not built here. Talks to
+  # `db`/`mail` by their service names, not localhost — a different network
+  # namespace than the host-side dev loop uses.
+  app:
+    image: ${APP_IMAGE:-dotnetagenticstarterkit}:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      mail:
+        condition: service_started
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Default: "Host=db;Port=5432;Database=DotnetAgenticStarterkit;Username=DotnetAgenticStarterkit;Password=dev_only_change_me"
+      Email__Host: mail
+      Email__Port: "25"
+    ports:
+      - "8080:8080"
+
+volumes:
+  pgdata:

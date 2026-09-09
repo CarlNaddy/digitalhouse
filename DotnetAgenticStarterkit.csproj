@@ -1,0 +1,66 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <!-- Nullable, ImplicitUsings, LangVersion, analyzers: see Directory.Build.props -->
+    <UserSecretsId>230b5278-ccf0-4f1b-9ff6-0692cadb3827</UserSecretsId>
+  </PropertyGroup>
+
+  <!-- Container image (parity plan P5.1) — the built-in .NET SDK container
+       publish, not a hand-maintained Dockerfile: `dotnet publish
+       -t:PublishContainer`. Base image + tag resolve automatically from
+       TargetFramework (mcr.microsoft.com/dotnet/aspnet:10.0). Repository name
+       is self-derived, not a literal "DotnetAgenticStarterkit" string — Docker/OCI
+       repository names must be lowercase, but this repo's own template
+       rename (scripts/new-project.sh) produces PascalCase project names
+       (e.g. "Contoso.Portal", the documented example) by design, and a
+       literal uppercase value here would build fine locally (the SDK
+       silently normalizes it) but then mismatch every *other* place that
+       needs to reference the same image by name (compose.yaml, CI) — see
+       docs/deployment.md. Self-deriving means it's always correct, for any
+       project name, with nothing to keep in sync by hand. -->
+  <PropertyGroup>
+    <ContainerRepository>$(MSBuildProjectName.ToLowerInvariant())</ContainerRepository>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The test project is under tests/ (same repo root as this Web SDK
+         project), so exclude it from the default globs. -->
+    <Compile Remove="tests/**/*.cs" />
+    <Content Remove="tests/**/*" />
+    <None Remove="tests/**/*" />
+    <EmbeddedResource Remove="tests/**/*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Hangfire.AspNetCore" />
+    <PackageReference Include="Hangfire.PostgreSql" />
+    <PackageReference Include="MailKit" />
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Hybrid" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
+    <PackageReference Include="MudBlazor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- External OAuth2 login (parity plan P3.4). Google + Microsoft are
+         first-party; GitHub has no MS handler so it uses the aspnet-contrib one.
+         Each registers only when its ClientId/ClientSecret are configured. -->
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.MicrosoftAccount" />
+    <PackageReference Include="AspNet.Security.OAuth.GitHub" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- EF Core 10 + PostgreSQL — see CLAUDE.md "Data access". Npgsql brings
+         Microsoft.EntityFrameworkCore(.Relational) transitively. Design is
+         build-only (dotnet ef / migrations). Versions: Directory.Packages.props. -->
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

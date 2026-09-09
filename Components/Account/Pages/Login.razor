@@ -1,0 +1,125 @@
+@page "/Account/Login"
+@attribute [ExcludeFromInteractiveRouting]
+
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Identity
+
+@inject SignInManager<ApplicationUser> SignInManager
+@inject IdentityRedirectManager RedirectManager
+@inject ILogger<Login> Logger
+
+<PageTitle>Log in</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">Log in</MudText>
+
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <MudAlert Severity="Severity.Error" Class="mb-4">@_errorMessage</MudAlert>
+}
+
+@* Native Blazor inputs, not MudTextField — see CLAUDE.md "Authentication &
+   authorization" (MudBlazor's inputs bind via interactive JS/event wiring and
+   render no `name` attribute, so they can't take part in the native form POST
+   a static-SSR EditForm needs). MudButton/MudAlert/MudText/MudLink still work:
+   they don't carry bound values. *@
+<EditForm Model="Input" method="post" OnValidSubmit="LoginUserAsync" FormName="login">
+    <DataAnnotationsValidator />
+    <MudGrid Spacing="3">
+        <MudItem xs="12">
+            <MudText Typo="Typo.body2">Email</MudText>
+            <InputText @bind-Value="Input.Email" class="account-input" />
+            <ValidationMessage For="@(() => Input.Email)" class="account-validation" />
+        </MudItem>
+        <MudItem xs="12">
+            <MudText Typo="Typo.body2">Password</MudText>
+            <InputText @bind-Value="Input.Password" type="password" class="account-input" />
+            <ValidationMessage For="@(() => Input.Password)" class="account-validation" />
+        </MudItem>
+        <MudItem xs="12" Class="d-flex align-center">
+            <InputCheckbox @bind-Value="Input.RememberMe" id="rememberMe" />
+            <label for="rememberMe" class="ml-2">Remember me</label>
+        </MudItem>
+        <MudItem xs="12">
+            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary">Log in</MudButton>
+        </MudItem>
+    </MudGrid>
+</EditForm>
+
+@if (_externalLogins.Length > 0)
+{
+    <MudDivider Class="my-4" />
+    <MudText Typo="Typo.body2" Class="mb-2">Or sign in with</MudText>
+    <div class="d-flex flex-wrap">
+        @foreach (var provider in _externalLogins)
+        {
+            <form action="Account/PerformExternalLogin" method="post">
+                <AntiforgeryToken />
+                <input type="hidden" name="provider" value="@provider.Name" />
+                <input type="hidden" name="returnUrl" value="@ReturnUrl" />
+                <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Outlined" Class="mr-2 mb-2">
+                    @provider.DisplayName
+                </MudButton>
+            </form>
+        }
+    </div>
+}
+
+<MudText Class="mt-4">
+    <MudLink Href="Account/Register">Register as a new user</MudLink>
+</MudText>
+<MudText Class="mt-2">
+    <MudLink Href="Account/ForgotPassword">Forgot your password?</MudLink>
+</MudText>
+
+@code {
+    private AuthenticationScheme[] _externalLogins = [];
+
+    protected override async Task OnInitializedAsync() =>
+        _externalLogins = (await SignInManager.GetExternalAuthenticationSchemesAsync()).ToArray();
+
+    // BL0008: the initializer only backstops a GET request; a POST always
+    // supplies every bound field before OnValidSubmit runs.
+#pragma warning disable BL0008
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = new();
+#pragma warning restore BL0008
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    private string? _errorMessage;
+
+    private async Task LoginUserAsync()
+    {
+        var result = await SignInManager.PasswordSignInAsync(
+            Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
+
+        if (result.Succeeded)
+        {
+            Logger.LogInformation("User {Email} logged in.", Input.Email);
+            RedirectManager.RedirectTo(ReturnUrl ?? "/");
+            return;
+        }
+
+        // P4.2: RequireConfirmedAccount rejects sign-in with NotAllowed, not a
+        // plain failure — give that case its own message.
+        _errorMessage = result.IsNotAllowed
+            ? "Error: confirm your email before logging in — check your inbox for the confirmation link."
+            : "Error: invalid login attempt.";
+    }
+
+    private sealed class InputModel
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = "";
+
+        [Required]
+        [DataType(DataType.Password)]
+        public string Password { get; set; } = "";
+
+        [Display(Name = "Remember me?")]
+        public bool RememberMe { get; set; }
+    }
+}

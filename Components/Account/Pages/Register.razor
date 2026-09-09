@@ -1,0 +1,130 @@
+@page "/Account/Register"
+@attribute [ExcludeFromInteractiveRouting]
+
+@using System.ComponentModel.DataAnnotations
+@using System.Text
+@using DotnetAgenticStarterkit.Features.Email
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.WebUtilities
+
+@inject UserManager<ApplicationUser> UserManager
+@inject IUserStore<ApplicationUser> UserStore
+@inject IEmailSender<ApplicationUser> EmailSender
+@inject NavigationManager Nav
+@inject ILogger<Register> Logger
+
+<PageTitle>Register</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">Create an account</MudText>
+
+@if (!string.IsNullOrEmpty(_message))
+{
+    <MudAlert Severity="Severity.Error" Class="mb-4">@_message</MudAlert>
+}
+
+@if (_registered)
+{
+    <MudAlert Severity="Severity.Success" Class="mb-4">
+        Check your email to confirm your account before logging in.
+    </MudAlert>
+}
+else
+{
+    @* Native Blazor inputs, not MudTextField — see CLAUDE.md "Authentication &
+       authorization" (MudBlazor's inputs bind via interactive JS/event wiring and
+       render no `name` attribute, so they can't take part in the native form POST
+       a static-SSR EditForm needs). MudButton/MudAlert/MudText/MudLink still work:
+       they don't carry bound values. *@
+    <EditForm Model="Input" method="post" OnValidSubmit="RegisterUserAsync" FormName="register">
+        <DataAnnotationsValidator />
+        <MudGrid Spacing="3">
+            <MudItem xs="12">
+                <MudText Typo="Typo.body2">Email</MudText>
+                <InputText @bind-Value="Input.Email" class="account-input" />
+                <ValidationMessage For="@(() => Input.Email)" class="account-validation" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudText Typo="Typo.body2">Password</MudText>
+                <InputText @bind-Value="Input.Password" type="password" class="account-input" />
+                <ValidationMessage For="@(() => Input.Password)" class="account-validation" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudText Typo="Typo.body2">Confirm password</MudText>
+                <InputText @bind-Value="Input.ConfirmPassword" type="password" class="account-input" />
+                <ValidationMessage For="@(() => Input.ConfirmPassword)" class="account-validation" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary">Register</MudButton>
+            </MudItem>
+        </MudGrid>
+    </EditForm>
+}
+
+<MudText Class="mt-4">
+    Already have an account? <MudLink Href="Account/Login">Log in</MudLink>
+</MudText>
+
+@code {
+    // BL0008: the initializer only backstops a GET request; a POST always
+    // supplies every bound field before OnValidSubmit runs.
+#pragma warning disable BL0008
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = new();
+#pragma warning restore BL0008
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    private string? _message;
+    private bool _registered;
+
+    private async Task RegisterUserAsync()
+    {
+        if (!UserManager.SupportsUserEmail)
+        {
+            throw new NotSupportedException("Registration requires a user store with email support.");
+        }
+
+        var emailStore = (IUserEmailStore<ApplicationUser>)UserStore;
+        var user = new ApplicationUser();
+        await UserStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
+        await emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
+
+        var result = await UserManager.CreateAsync(user, Input.Password);
+        if (!result.Succeeded)
+        {
+            _message = "Error: " + string.Join(" ", result.Errors.Select(e => e.Description));
+            return;
+        }
+
+        Logger.LogInformation("User {Email} created a new account with a password.", Input.Email);
+
+        // P4.2: confirm-before-login (RequireConfirmedAccount, Program.cs) — send
+        // the confirmation link instead of signing in immediately.
+        var userId = await UserManager.GetUserIdAsync(user);
+        var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
+        code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+        var confirmationLink = Nav.GetUriWithQueryParameters(
+            Nav.ToAbsoluteUri("Account/ConfirmEmail").AbsoluteUri,
+            new Dictionary<string, object?> { ["userId"] = userId, ["code"] = code, ["returnUrl"] = ReturnUrl });
+        await EmailSender.SendConfirmationLinkAsync(user, Input.Email, confirmationLink);
+
+        _registered = true;
+    }
+
+    private sealed class InputModel
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = "";
+
+        [Required]
+        [StringLength(100, MinimumLength = 8)]
+        [DataType(DataType.Password)]
+        public string Password { get; set; } = "";
+
+        [DataType(DataType.Password)]
+        [Compare(nameof(Password), ErrorMessage = "The password and confirmation password do not match.")]
+        public string ConfirmPassword { get; set; } = "";
+    }
+}

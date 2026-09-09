@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <!-- xUnit v3 runs on the Microsoft Testing Platform; `dotnet test` MTP mode
+         is opted into via global.json ("test": { "runner": ... }). -->
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Bogus" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="bunit" />
+    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Testcontainers depends on SSH.NET only for its remote-Docker-over-SSH
+         transport, which we never use (local Docker daemon). GHSA-q939-rpr3-3284
+         has no patched release, so suppress this one advisory rather than fail
+         the audit (NU1903 is warn-as-error repo-wide). Revisit when SSH.NET ships
+         a fix or Testcontainers drops the dependency. -->
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-q939-rpr3-3284" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\DotnetAgenticStarterkit.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

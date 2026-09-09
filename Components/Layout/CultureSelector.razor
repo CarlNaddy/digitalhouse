@@ -1,0 +1,25 @@
+@inject NavigationManager Nav
+
+<MudMenu Icon="@Icons.Material.Filled.Translate" Color="Color.Inherit"
+         AriaLabel="Change language" Dense="true">
+    @foreach (var (code, name) in Cultures)
+    {
+        <MudMenuItem OnClick="@(() => SetCulture(code))">@name</MudMenuItem>
+    }
+</MudMenu>
+
+@code {
+    private static readonly (string Code, string Name)[] Cultures =
+    [
+        ("en", "English"),
+        ("de", "Deutsch"),
+    ];
+
+    private void SetCulture(string culture)
+    {
+        var here = new Uri(Nav.Uri).PathAndQuery;
+        Nav.NavigateTo(
+            $"/culture/set?culture={Uri.EscapeDataString(culture)}&redirectUri={Uri.EscapeDataString(here)}",
+            forceLoad: true);
+    }
+}

@@ -1,0 +1,36 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+
+namespace DotnetAgenticStarterkit.Data.Seed;
+
+/// <summary>
+/// Entry point for <c>dotnet run -- seed</c>: applies pending migrations, then
+/// runs <see cref="DbSeeder"/> (sample data) and <see cref="IdentitySeeder"/>
+/// (Admin role + dev admin user). Keeps a fresh clone to a single command.
+/// </summary>
+public static class SeedCommand
+{
+    public const string Verb = "seed";
+
+    public static async Task RunAsync(IServiceProvider services)
+    {
+        await using var scope = services.CreateAsyncScope();
+        var sp = scope.ServiceProvider;
+        var factory = sp.GetRequiredService<IDbContextFactory<AppDbContext>>();
+        var logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger(Verb);
+
+        await using var db = await factory.CreateDbContextAsync();
+
+        logger.LogInformation("Applying pending migrations...");
+        await db.Database.MigrateAsync();
+
+        await DbSeeder.SeedAsync(db, logger);
+
+        await IdentitySeeder.SeedAsync(
+            sp.GetRequiredService<UserManager<ApplicationUser>>(),
+            sp.GetRequiredService<RoleManager<IdentityRole>>(),
+            sp.GetRequiredService<IConfiguration>(),
+            sp.GetRequiredService<IHostEnvironment>().IsDevelopment(),
+            logger);
+    }
+}

@@ -1,0 +1,4 @@
+# Repo convention is CRLF (see .editorconfig). Shell scripts must stay LF or the
+# shebang breaks on checkout.
+* text=auto
+*.sh text eol=lf

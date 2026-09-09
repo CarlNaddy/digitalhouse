@@ -1,0 +1,96 @@
+@* Shared create/edit form for a Listing. Not routable — hosted by
+   ListingCreate.razor and ListingEdit.razor. *@
+
+<EditForm Model="Model" OnValidSubmit="OnValidSubmit">
+    <DataAnnotationsValidator />
+    <MudGrid Spacing="3">
+        <MudItem xs="12" sm="8">
+            <MudTextField @bind-Value="Model.Title" Label="Title" For="@(() => Model.Title)"
+                          Immediate="true" Counter="120" MaxLength="120" />
+        </MudItem>
+        <MudItem xs="12" sm="4">
+            <MudSelect T="ListingStatus" @bind-Value="Model.Status" Label="Status"
+                       For="@(() => Model.Status)">
+                @foreach (var status in Enum.GetValues<ListingStatus>())
+                {
+                    <MudSelectItem Value="status">@status</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+
+        <MudItem xs="12" sm="8">
+            <MudTextField @bind-Value="Model.Address" Label="Address" For="@(() => Model.Address)" />
+        </MudItem>
+        <MudItem xs="12" sm="4">
+            <MudTextField @bind-Value="Model.City" Label="City" For="@(() => Model.City)" />
+        </MudItem>
+
+        <MudItem xs="6" sm="3">
+            <MudNumericField @bind-Value="Model.Price" Label="Price" For="@(() => Model.Price)"
+                             Min="0" Format="0.00" />
+        </MudItem>
+        <MudItem xs="6" sm="3">
+            <MudNumericField @bind-Value="Model.FloorAreaSqm" Label="Area (m²)" For="@(() => Model.FloorAreaSqm)"
+                             Min="0" />
+        </MudItem>
+        <MudItem xs="6" sm="3">
+            <MudNumericField @bind-Value="Model.Bedrooms" Label="Bedrooms" For="@(() => Model.Bedrooms)"
+                             Min="0" Max="20" />
+        </MudItem>
+        <MudItem xs="6" sm="3">
+            <MudNumericField @bind-Value="Model.Bathrooms" Label="Bathrooms" For="@(() => Model.Bathrooms)"
+                             Min="0" Max="20" />
+        </MudItem>
+
+        <MudItem xs="12" sm="4">
+            <MudDatePicker Label="Listed on" @bind-Date="ListedOnDate" />
+            <ValidationMessage For="@(() => Model.ListedOn)" />
+        </MudItem>
+
+        <MudItem xs="12">
+            <MudTextField @bind-Value="Model.Description" Label="Description" For="@(() => Model.Description)"
+                          Lines="4" Counter="2000" MaxLength="2000" />
+        </MudItem>
+
+        <MudItem xs="12" Class="d-flex gap-2 justify-end">
+            <MudButton Variant="Variant.Text" OnClick="OnCancel">Cancel</MudButton>
+            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary"
+                       Disabled="_submitting">
+                @SubmitLabel
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+</EditForm>
+
+@code {
+    [Parameter, EditorRequired] public Listing Model { get; set; } = null!;
+    [Parameter, EditorRequired] public EventCallback OnSubmit { get; set; }
+    [Parameter, EditorRequired] public EventCallback OnCancel { get; set; }
+    [Parameter] public string SubmitLabel { get; set; } = "Save";
+
+    private bool _submitting;
+
+    private DateTime? ListedOnDate
+    {
+        get => Model.ListedOn == default ? null : Model.ListedOn.ToDateTime(TimeOnly.MinValue);
+        set => Model.ListedOn = value is null ? default : DateOnly.FromDateTime(value.Value);
+    }
+
+    private async Task OnValidSubmit()
+    {
+        if (_submitting)
+        {
+            return;
+        }
+
+        _submitting = true;
+        try
+        {
+            await OnSubmit.InvokeAsync();
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+}

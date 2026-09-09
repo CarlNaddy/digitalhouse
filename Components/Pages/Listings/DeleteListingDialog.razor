@@ -1,0 +1,20 @@
+<MudDialog>
+    <DialogContent>
+        <MudText>
+            Delete listing <strong>@Title</strong>? This cannot be undone.
+        </MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => MudDialog.Cancel())">Cancel</MudButton>
+        <MudButton Color="Color.Error" Variant="Variant.Filled"
+                   OnClick="@(() => MudDialog.Close(DialogResult.Ok(true)))">
+            Delete
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+}

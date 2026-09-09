@@ -1,0 +1,45 @@
+### Listings API — Endpoints/ListingsApiEndpoints.cs (P4.3 caching + rate
+### limiting, P4.4 file storage). Reads are public; the photo upload is
+### gated to the ListingsWriter policy (any signed-in user).
+###
+### Rate limit: 5 requests / 10s per client, fixed window ("Api" policy) —
+### hammering this file will 429. Reads are also cached 30s server-side
+### ("Listings" output-cache policy) — a repeat GET within that window
+### returns the cached response even after data changes; see docs/caching.md.
+
+@baseUrl = https://localhost:7105
+
+### Get all listings
+GET {{baseUrl}}/api/listings
+
+### Get one listing
+GET {{baseUrl}}/api/listings/1
+
+### Get a listing that doesn't exist — expect 404
+GET {{baseUrl}}/api/listings/999999
+
+### Upload a photo — needs a real session, not runnable as-is.
+### This endpoint is [Authorize(Policy = "ListingsWriter")] (cookie auth) and
+### form-bound, so ASP.NET Core's automatic antiforgery validation applies
+### (dotnet-aspnetcore:minimal-api-file-upload) — a raw request needs both
+### the auth cookie AND a matching __RequestVerificationToken form field, not
+### just a bearer token. Easiest way to get both: log in through the app in a
+### browser, open dev tools' Network tab, find the antiforgery cookie value
+### and copy a __RequestVerificationToken from any rendered <form> on the
+### site, then substitute them below. Swap {{authCookie}} / {{csrfToken}} for
+### real values, and update the boundary/id to match.
+# @no-redirect
+POST {{baseUrl}}/api/listings/1/photo
+Content-Type: multipart/form-data; boundary=----boundary
+Cookie: .AspNetCore.Identity.Application={{authCookie}}
+
+------boundary
+Content-Disposition: form-data; name="__RequestVerificationToken"
+
+{{csrfToken}}
+------boundary
+Content-Disposition: form-data; name="file"; filename="photo.jpg"
+Content-Type: image/jpeg
+
+< ./sample-photo.jpg
+------boundary--

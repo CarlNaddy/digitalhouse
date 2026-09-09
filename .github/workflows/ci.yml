@@ -1,0 +1,55 @@
+# Restore → build → test (with Cobertura coverage). Rails-parity plan P2.5.
+# The full deploy pipeline (publish + release to an environment) is P5.3.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore DotnetAgenticStarterkit.slnx
+
+      - name: Build
+        run: dotnet build DotnetAgenticStarterkit.slnx --no-restore -c Release
+
+      # Docker is preinstalled on ubuntu-latest, so the Testcontainers PostgreSQL
+      # tests (P2.3) run here with no extra service wiring.
+      - name: Test + coverage
+        run: >
+          dotnet test DotnetAgenticStarterkit.slnx --no-build -c Release
+          -- --coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml
+
+      - name: Coverage summary
+        if: always()
+        run: |
+          f=$(find . -name coverage.cobertura.xml | head -1)
+          if [ -z "$f" ]; then echo "No coverage file produced." >> "$GITHUB_STEP_SUMMARY"; exit 0; fi
+          python3 - "$f" >> "$GITHUB_STEP_SUMMARY" <<'PY'
+          import sys, xml.etree.ElementTree as ET
+          r = ET.parse(sys.argv[1]).getroot()
+          lr, br = float(r.get("line-rate")) * 100, float(r.get("branch-rate")) * 100
+          print("### Coverage\n")
+          print("| Metric | Covered | Total | % |")
+          print("|---|---|---|---|")
+          print(f"| Lines | {r.get('lines-covered')} | {r.get('lines-valid')} | {lr:.2f}% |")
+          print(f"| Branches | {r.get('branches-covered')} | {r.get('branches-valid')} | {br:.2f}% |")
+          PY
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: '**/coverage.cobertura.xml'
+          if-no-files-found: warn
