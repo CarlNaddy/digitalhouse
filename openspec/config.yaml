@@ -1,32 +1,162 @@
 schema: spec-driven
 
-# Project context (optional)
-# This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+# Project context — shown to AI when creating or revising OpenSpec artifacts.
+context: |
+  DigitalHouse — an ASP.NET Core monolith brought to "Rails-level productivity".
+  See CLAUDE.md at the repo root for the authoritative stack and conventions;
+  the summary below is what every OpenSpec proposal/design/tasks must target.
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+  Stack:
+  - .NET 10, ASP.NET Core, Blazor Web App template, global Interactive Server
+    render mode.
+  - MudBlazor for ALL UI. No Bootstrap/Tailwind/hand-rolled CSS. The only
+    exception is bound form inputs on Identity's static-SSR pages (native
+    InputText/InputCheckbox). Pin the MudBlazor version; check component
+    signatures against the installed version.
+  - EF Core 10 + PostgreSQL (Npgsql) in every environment. No SQLite split.
+    `AppDbContext : IdentityDbContext<ApplicationUser>` — one context, one
+    migration history under Data/Migrations/. Entities are the model: query
+    DbContext with LINQ from feature services/components, no repository layer.
+    Components take `IDbContextFactory<AppDbContext>`; Identity stores use the
+    scoped `AppDbContext` registered alongside it.
+  - ASP.NET Core Identity (cookie), roles enabled. `ApplicationUser :
+    IdentityUser`. Named authorization policies registered in Program.cs via
+    `AddAuthorizationBuilder()`; the `Listing` feature is the worked pattern
+    (public read, `ListingsWriter` = RequireAuthenticatedUser to write,
+    `ListingsAdmin` = RequireRole("Admin") to delete). `[Authorize(Policy=…)]`
+    guards the page, `<AuthorizeView Policy=…>` hides the control, and a
+    handler re-checks the role in code — a hidden button is not a security
+    boundary. A dev admin user + `Admin` role are seeded.
+  - Background jobs: Hangfire, storage in the app's own PostgreSQL (`hangfire`
+    schema, not an EF migration). Jobs are plain classes in Features/Jobs/,
+    constructor-injected with `IDbContextFactory<AppDbContext>`, enqueued /
+    scheduled by method reference. Recurring jobs registered with
+    `IRecurringJobManager.AddOrUpdate` at startup. `/hangfire` dashboard gated
+    to the `Admin` role.
+  - Email: MailKit behind Identity's `IEmailSender<TUser>`; Razor-component
+    templates rendered by `HtmlRenderer`; dev sink smtp4dev.
+  - Caching / rate limiting: first-party only — `HybridCache`, `OutputCache`,
+    `AddRateLimiter`. In front of JSON API endpoints, not the Blazor pages.
+    Every cached read needs a matching tag-based invalidation call at each
+    write point.
+  - File storage: `IFileStore` seam, `LocalDiskFileStore` today, provider
+    switch on config key `FileStorage:Provider`. Metadata (`StoredFile`) always
+    in Postgres; bytes under `FileStorage:RootPath`. Validate uploads by magic
+    bytes, not the client Content-Type. The app's own Blazor UI calls the
+    storage service directly via DI (Interactive Server is already server-side);
+    API clients get a `ManageX`-gated endpoint with antiforgery ON.
+  - Payments: no first-party .NET payment library. Use the official `Stripe.net`
+    SDK behind a thin `IPaymentGateway` seam (create-intent / verify-succeeded /
+    refund) so a `FakePaymentGateway` replaces it in tests. Stripe keys
+    (`Stripe:SecretKey`, `Stripe:PublishableKey`, `Stripe:WebhookSecret`) come
+    from user-secrets in dev / env vars in prod — never appsettings*.json.
+    Webhook is an unauthenticated, signature-verified minimal-API endpoint with
+    `.DisableAntiforgery()`; idempotent per Stripe event id and payment-intent
+    id.
+  - Money: integer only. Prices in micro-USD (`long`, 1e-6 USD); everything that
+    moves (charges, wallet, ledger) in integer USD cents,
+    `cents = round(micros / 10_000)`. `decimal` is allowed only for non-money
+    exponent/curve math; never `double` for money. USD is the only settlement
+    currency.
+  - Clock: inject `TimeProvider`; never call `DateTime.Now`/`DateTimeOffset.Now`
+    directly in logic — tests must be deterministic. `FakeTimeProvider` in tests.
+  - ULID identifiers: the `Ulid` package (Cysharp). Stored as a 26-char string
+    column; `Ulid.NewUlid()` / `Ulid.NewUlid(DateTimeOffset)`.
+  - Tests: xUnit v3 on the Microsoft Testing Platform, tests/DigitalHouse.Tests/.
+    DB-touching tests run against REAL PostgreSQL via Testcontainers — derive
+    from `DatabaseTest` (`CreateContext()`, per-test wipe, `Ct`). Never SQLite /
+    EF in-memory. Component tests use bUnit 2.x via `MudBlazorTestContext`.
+    Test data: fluent builders under tests/DigitalHouse.Tests/TestData/ (Bogus,
+    fixed seed), NOT ORM factories. Test names `Method_under_test_does_x`.
+    Assertions deterministic — no clock/network/process/real filesystem.
+  - Deployment: SDK container publish (no Dockerfile). `/health` + `/alive`.
+    Data Protection keys persisted in Postgres.
 
-# Per-operation guidance (optional)
-# Add advisory guidance for how apply and archive work should be conducted.
-# This is separate from artifact rules above.
-# Example:
-#   operations:
-#     apply:
-#       guidance:
-#         - Keep test summaries concise
-#     archive:
-#       guidance:
-#         - Summarize the archive outcome before finishing
+  Project layout (single project, organize by concern in folders):
+  - Components/  — Blazor UI. Pages/ = routable (@page), Layout/, Shared/.
+    Move @code to a .razor.cs past ~30 lines; component styles in .razor.css.
+  - Data/        — AppDbContext, entities (one type per file), Data/Migrations/
+    (EF-generated), Data/Seed/.
+  - Features/<Feature>/ — application logic: services, view models, validators,
+    jobs; may hold components specific to that feature.
+  - Endpoints/   — minimal-API `Map*` extension methods grouped by resource,
+    called from Program.cs. A `<Resource>.http` file alongside each
+    `<Resource>Endpoints.cs`. No Controllers/ unless a real MVC need appears.
+  - Program.cs at the repo root.
+
+  Naming & style:
+  - File-scoped namespaces mirroring the folder (DigitalHouse.Features.X).
+  - One public type per file; file name matches the type.
+  - `_camelCase` private fields; PascalCase types/members/constants; camelCase
+    locals/params; `I`-prefixed interfaces. Async methods end with `Async`
+    (except Blazor lifecycle overrides and UI event handlers).
+  - Nullable reference types on — model nullability honestly; no `#nullable
+    disable`, no reflexive `!`.
+  - Directory.Build.props enforces: Nullable + ImplicitUsings, latest
+    LangVersion, AnalysisMode Recommended, TreatWarningsAsErrors. Central
+    package management — versions in Directory.Packages.props, no Version on
+    PackageReference.
+
+  Commands (there is no Artisan / Composer / npm):
+  - `dotnet build DigitalHouse.slnx`
+  - `dotnet run -- seed`     — apply migrations + seed sample data (idempotent)
+  - `dotnet run -- console`  — the `rails console` substitute (Features/Console/)
+  - `dotnet watch run`       — dev loop
+  - `dotnet test`            — xUnit v3 via MTP (needs Docker for DB tests)
+  - `dotnet ef migrations add <Name>` / `dotnet ef database update` (via the
+    local tool manifest — `dotnet tool restore` first)
+  - `dotnet format DigitalHouse.slnx --verify-no-changes` — format gate
+  - `openspec validate <change> --strict`
+
+  Translation note: this project's OpenSpec changes were first drafted against a
+  Laravel/Livewire/Flux/Cashier/Blade/Pest/Eloquent stack and have since been
+  re-expressed for the stack above. If any artifact still references PHP,
+  Artisan, Eloquent, Blade, Livewire, Pest, Pint, or `laravel/cashier`, treat
+  that as a translation bug to fix, not as guidance.
+
+rules:
+  proposal:
+    - "Keep the four sections: Why, What Changes, Capabilities (New/Modified),
+      Impact."
+    - "Impact must name real artifacts for THIS stack: EF Core migrations and
+      entities under Data/, Blazor components under Components/, feature
+      services under Features/, minimal-API endpoints under Endpoints/, Hangfire
+      jobs, xUnit test types, Directory.Packages.props for any new NuGet
+      package. Never `php artisan …`, `composer require …`, Blade paths, or
+      Livewire components."
+    - "Call out a new NuGet dependency explicitly (added to
+      Directory.Packages.props); prefer first-party / already-referenced
+      packages."
+  design:
+    - "Decisions must be expressed in stack terms: EF Core mapping (entity
+      config, indexes incl. Npgsql filtered/partial unique indexes, value
+      conversions), migration workflow, DI lifetimes (DbContext work is Scoped;
+      components use IDbContextFactory), Blazor render mode and MudBlazor
+      components, Hangfire scheduling, authorization policies, the IPaymentGateway
+      / IFileStore seams, TimeProvider for the clock."
+    - "Concurrency: EF Core has no first-class `SELECT … FOR UPDATE`; use an
+      explicit transaction plus a raw `… FOR UPDATE` lock statement, and/or a
+      Npgsql filtered unique index as the serializer. Say which."
+    - "Money is integer `long` (micro-USD for prices, cents for movement);
+      `decimal` only for non-money curve math; never `double` for money."
+  tasks:
+    - "Each task states the artifact path for this stack and a `dotnet
+      test` / `dotnet ef` / `dotnet run -- …` verification, not an Artisan or
+      Pest command."
+    - "DB-touching tests derive from DatabaseTest (real Postgres); component
+      tests use bUnit/MudBlazorTestContext; test data uses TestData/ builders."
+    - "New changes start every checkbox unchecked (`- [ ]`); a box is checked
+      only when that step is actually implemented and verified in this repo."
+
+operations:
+  apply:
+    guidance:
+      - "Run `dotnet build DigitalHouse.slnx` and `dotnet test` after each task
+        cluster; DB/integration tests need Docker (`docker compose up -d db`)."
+      - "Generate migrations with `dotnet ef migrations add`; never hand-edit a
+        prior migration. Keep `dotnet format --verify-no-changes` clean."
+  archive:
+    guidance:
+      - "Reconcile the delta specs into openspec/specs/ (currently empty — the
+        base marketplace change establishes the first ones)."
+      - "Summarize the archive outcome before finishing."
