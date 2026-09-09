@@ -1,0 +1,146 @@
+@page "/marketplace"
+@using DigitalHouse.Features.Marketplace
+@inject ICatalogQuery Query
+@inject NavigationManager Nav
+
+<PageTitle>Marketplace</PageTitle>
+
+<div class="d-flex align-center gap-4 mb-4">
+    <MudText Typo="Typo.h4">Marketplace</MudText>
+    <MudSpacer />
+    <MudTextField @bind-Value="_search" Placeholder="Search collectibles" Margin="Margin.Dense"
+                  Variant="Variant.Outlined" Adornment="Adornment.Start"
+                  AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Small"
+                  Immediate="false" DebounceInterval="300" OnDebounceIntervalElapsed="ApplyFiltersAsync"
+                  Clearable="true" Style="max-width:320px" />
+</div>
+
+<div class="d-flex flex-wrap align-center gap-3 mb-4">
+    <MudNumericField T="long?" @bind-Value="_minPrice" Label="Min $" Variant="Variant.Outlined"
+                     Margin="Margin.Dense" Style="max-width:120px" HideSpinButtons="true" />
+    <MudNumericField T="long?" @bind-Value="_maxPrice" Label="Max $" Variant="Variant.Outlined"
+                     Margin="Margin.Dense" Style="max-width:120px" HideSpinButtons="true" />
+    <MudSelect T="CatalogSort" @bind-Value="_sort" Label="Sort" Variant="Variant.Outlined"
+               Margin="Margin.Dense" Style="max-width:200px">
+        <MudSelectItem Value="CatalogSort.Newest">Newest</MudSelectItem>
+        <MudSelectItem Value="CatalogSort.PriceLowToHigh">Price: low to high</MudSelectItem>
+        <MudSelectItem Value="CatalogSort.PriceHighToLow">Price: high to low</MudSelectItem>
+    </MudSelect>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ApplyFiltersAsync">Apply</MudButton>
+    @if (HasActiveFilter)
+    {
+        <MudButton Variant="Variant.Text" OnClick="ClearFiltersAsync"
+                   StartIcon="@Icons.Material.Filled.Clear">Clear filters</MudButton>
+    }
+</div>
+
+@if (_loading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (_page.Items.Count == 0)
+{
+    <MudText Class="pa-4">No collectibles match. @(HasActiveFilter ? "Try clearing the filters." : "")</MudText>
+}
+else
+{
+    <MudGrid>
+        @foreach (var item in _page.Items)
+        {
+            <MudItem xs="12" sm="6" md="4" lg="3">
+                <MudCard>
+                    @if (item.PrimaryImageFileId is { } fileId)
+                    {
+                        <MudCardMedia Image="@($"/api/files/{fileId}")" Height="180" />
+                    }
+                    <MudCardContent>
+                        <MudText Typo="Typo.subtitle1">@item.Title</MudText>
+                        <MudText Typo="Typo.h6">@MarketplaceFormat.Usd(item.CurrentPriceCents)</MudText>
+                        <MudText Typo="Typo.caption"
+                                 Color="@(item.GrowthLast12MonthsCents >= 0 ? Color.Success : Color.Error)">
+                            Growth last year @MarketplaceFormat.SignedUsd(item.GrowthLast12MonthsCents)
+                        </MudText>
+                        <div class="d-flex gap-1 mt-2">
+                            @if (item.IsCollectorListed)
+                            {
+                                <MudChip T="string" Size="Size.Small" Color="Color.Secondary">owned asset</MudChip>
+                            }
+                            @if (item.ViewerHasReservation)
+                            {
+                                <MudChip T="string" Size="Size.Small" Color="Color.Info">reserved</MudChip>
+                            }
+                        </div>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Variant="Variant.Text" Color="Color.Primary"
+                                   Href="@($"/marketplace/{item.Slug}")">View</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
+        }
+    </MudGrid>
+
+    @if (_page.TotalPages > 1)
+    {
+        <div class="d-flex justify-center mt-6">
+            <MudPagination Count="_page.TotalPages" Selected="_currentPage"
+                           SelectedChanged="GoToPageAsync" />
+        </div>
+    }
+}
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthState { get; set; }
+
+    private CatalogPage _page = new([], 0, 1, 24);
+    private bool _loading = true;
+    private int _currentPage = 1;
+
+    private string _search = "";
+    private long? _minPrice;
+    private long? _maxPrice;
+    private CatalogSort _sort = CatalogSort.Newest;
+
+    private bool HasActiveFilter =>
+        !string.IsNullOrWhiteSpace(_search) || _minPrice is not null || _maxPrice is not null;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        var viewerId = await AuthState.UserIdAsync();
+        var filter = new CatalogFilter
+        {
+            Page = _currentPage,
+            Search = _search,
+            MinPriceCents = _minPrice is { } min ? min * 100 : null,
+            MaxPriceCents = _maxPrice is { } max ? max * 100 : null,
+            Sort = _sort,
+        };
+        _page = await Query.BrowseAsync(filter, viewerId);
+        _loading = false;
+    }
+
+    private async Task ApplyFiltersAsync()
+    {
+        _currentPage = 1;
+        await LoadAsync();
+    }
+
+    private async Task ClearFiltersAsync()
+    {
+        _search = "";
+        _minPrice = null;
+        _maxPrice = null;
+        _sort = CatalogSort.Newest;
+        await ApplyFiltersAsync();
+    }
+
+    private async Task GoToPageAsync(int page)
+    {
+        _currentPage = page;
+        await LoadAsync();
+    }
+}

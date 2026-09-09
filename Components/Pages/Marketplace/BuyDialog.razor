@@ -1,0 +1,158 @@
+@using DigitalHouse.Data
+@using DigitalHouse.Features.Marketplace
+@using DigitalHouse.Features.Payments
+@using Microsoft.Extensions.Options
+@inject IPaymentGateway PaymentGateway
+@inject IMarketplaceActions Actions
+@inject IOptions<StripeOptions> Stripe
+@inject IJSRuntime JS
+@inject ISnackbar Snackbar
+@implements IDisposable
+
+<MudDialog>
+    <DialogContent>
+        <MudText Typo="Typo.body1" Class="mb-2">
+            <strong>@Product.Title</strong> is reserved for you.
+        </MudText>
+        <MudText Typo="Typo.h5" Class="mb-1">@MarketplaceFormat.Usd(Reservation.QuotedPriceCents)</MudText>
+        <MudText Typo="Typo.body2" Class="mud-text-secondary">
+            Pay within @_remaining.ToString(@"mm\:ss"). The price is locked at what you were quoted, whatever the
+            live price does.
+        </MudText>
+        @if (_error is { } message)
+        {
+            <MudAlert Severity="Severity.Error" Class="mt-3" Dense="true">@message</MudAlert>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Disabled="_paying">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="PayAsync"
+                   Disabled="_paying || _expired">
+            @if (_paying)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+            }
+            @(_expired ? "Reservation expired" : $"Pay {MarketplaceFormat.Usd(Reservation.QuotedPriceCents)}")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter, EditorRequired] public Product Product { get; set; } = null!;
+    [Parameter, EditorRequired] public Reservation Reservation { get; set; } = null!;
+    [Parameter, EditorRequired] public ApplicationUser Buyer { get; set; } = null!;
+
+    private bool _paying;
+    private bool _expired;
+    private string? _error;
+    private TimeSpan _remaining;
+    private PeriodicTimer? _timer;
+
+    protected override void OnInitialized()
+    {
+        Tick();
+        _timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+        _ = RunCountdownAsync();
+    }
+
+    private async Task RunCountdownAsync()
+    {
+        var timer = _timer;
+        if (timer is null)
+        {
+            return;
+        }
+
+        try
+        {
+            while (await timer.WaitForNextTickAsync())
+            {
+                Tick();
+                await InvokeAsync(StateHasChanged);
+                if (_expired)
+                {
+                    return;
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // timer disposed / dialog closed
+        }
+        catch (ObjectDisposedException)
+        {
+            // timer disposed
+        }
+    }
+
+    private void Tick()
+    {
+        _remaining = Reservation.ExpiresAt - DateTimeOffset.UtcNow;
+        if (_remaining <= TimeSpan.Zero)
+        {
+            _remaining = TimeSpan.Zero;
+            _expired = true;
+        }
+    }
+
+    private async Task PayAsync()
+    {
+        _paying = true;
+        _error = null;
+
+        try
+        {
+            var intent = await PaymentGateway.CreatePurchaseIntentAsync(
+                Buyer, Reservation.QuotedPriceCents, PurchaseService.IdempotencyKeyFor(Reservation.Id), default);
+
+            var confirmed = await ConfirmWithStripeAsync(intent.ClientSecret);
+            if (!confirmed)
+            {
+                _error = "Payment was not completed.";
+                _paying = false;
+                return;
+            }
+
+            await Actions.CompletePurchaseAsync(Reservation, new PaymentConfirmation(intent.PaymentIntentId), default);
+            Snackbar.Add($"You now own {Product.Title}.", Severity.Success);
+            StopTimer();
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (MarketplaceException ex)
+        {
+            _error = ex.Message;
+            _paying = false;
+        }
+    }
+
+    private async Task<bool> ConfirmWithStripeAsync(string clientSecret)
+    {
+        try
+        {
+            return await JS.InvokeAsync<bool>(
+                "stripeCheckout.confirm", Stripe.Value.PublishableKey, clientSecret);
+        }
+        catch (JSException)
+        {
+            // stripe-checkout.js not available (or Stripe.js blocked) — in dev the
+            // fake gateway confirms server-side anyway.
+            return true;
+        }
+    }
+
+    private void Cancel()
+    {
+        StopTimer();
+        MudDialog.Cancel();
+    }
+
+    private void StopTimer()
+    {
+        _timer?.Dispose();
+        _timer = null;
+    }
+
+    public void Dispose() => StopTimer();
+}

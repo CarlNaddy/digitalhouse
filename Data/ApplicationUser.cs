@@ -9,4 +9,11 @@ namespace DigitalHouse.Data;
 /// </summary>
 public class ApplicationUser : IdentityUser
 {
+    /// <summary>
+    /// The user's Stripe customer id, created lazily on their first marketplace
+    /// PaymentIntent (openspec: add-digital-asset-marketplace). Null until then;
+    /// there are no subscription tables — this app only creates one-off
+    /// PaymentIntents.
+    /// </summary>
+    public string? StripeCustomerId { get; set; }
 }

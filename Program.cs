@@ -8,6 +8,7 @@ using DigitalHouse.Features.Email;
 using DigitalHouse.Features.Files;
 using DigitalHouse.Features.Jobs;
 using DigitalHouse.Features.Listings;
+using DigitalHouse.Features.Marketplace;
 using Hangfire;
 using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Components.Web;
@@ -29,6 +30,10 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddMudServices();
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+
+// Testable clock. Feature code injects TimeProvider rather than calling
+// DateTimeOffset.Now directly; tests swap in FakeTimeProvider.
+builder.Services.AddSingleton(TimeProvider.System);
 
 string[] supportedCultures = ["en", "de"];
 var localizationOptions = new RequestLocalizationOptions()
@@ -191,6 +196,11 @@ switch (fileStorageProvider)
 
 builder.Services.AddScoped<ListingPhotoService>();
 
+// Marketplace feature (openspec: add-digital-asset-marketplace) — options,
+// domain services, the Stripe payment seam, and recurring jobs. See
+// Features/Marketplace/MarketplaceServiceCollectionExtensions.cs.
+builder.Services.AddMarketplace(builder.Configuration);
+
 // dotnet-aspnetcore:minimal-api-file-upload — the multipart body limit is a
 // global FormOptions setting with no per-endpoint override, but this app has
 // only one multipart form (the photo upload), so 5 MB here is scoped in
@@ -266,6 +276,7 @@ app.MapCultureEndpoints();
 app.MapAccountEndpoints();
 app.MapListingsApiEndpoints();
 app.MapFileEndpoints();
+app.MapStripeWebhookEndpoints();
 // /health: every check (readiness — can this instance actually serve
 // requests, DB included). /alive: only "live"-tagged checks (liveness — is
 // the process itself running, no dependencies) — the MS-documented split

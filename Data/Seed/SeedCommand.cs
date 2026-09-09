@@ -1,3 +1,5 @@
+using DigitalHouse.Features.Files;
+using DigitalHouse.Features.Marketplace;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -26,11 +28,25 @@ public static class SeedCommand
 
         await DbSeeder.SeedAsync(db, logger);
 
+        var userManager = sp.GetRequiredService<UserManager<ApplicationUser>>();
+        var configuration = sp.GetRequiredService<IConfiguration>();
+
         await IdentitySeeder.SeedAsync(
-            sp.GetRequiredService<UserManager<ApplicationUser>>(),
+            userManager,
             sp.GetRequiredService<RoleManager<IdentityRole>>(),
-            sp.GetRequiredService<IConfiguration>(),
+            configuration,
             sp.GetRequiredService<IHostEnvironment>().IsDevelopment(),
+            logger);
+
+        var adminEmail = configuration["Seed:AdminEmail"] ?? "admin@DigitalHouse.local";
+        var demoOwner = await userManager.FindByEmailAsync(adminEmail);
+
+        await MarketplaceSeeder.SeedAsync(
+            db,
+            sp.GetRequiredService<PricingEngine>(),
+            sp.GetRequiredService<IFileStore>(),
+            sp.GetRequiredService<TimeProvider>(),
+            demoOwner?.Id,
             logger);
     }
 }

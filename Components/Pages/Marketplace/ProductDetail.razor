@@ -1,0 +1,254 @@
+@page "/marketplace/{Slug}"
+@using System.Security.Claims
+@using DigitalHouse.Features.Marketplace
+@inject IProductView ProductView
+@inject IMarketplaceActions Actions
+@inject TimeProvider Clock
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject NavigationManager Nav
+
+<PageTitle>@(_vm?.Product.Title ?? "Product")</PageTitle>
+
+@if (_notFound)
+{
+    <MudAlert Severity="Severity.Error">No collectible with slug “@Slug”.</MudAlert>
+    <MudButton Class="mt-4" Href="/marketplace" Variant="Variant.Text"
+               StartIcon="@Icons.Material.Filled.ArrowBack">Back to the marketplace</MudButton>
+}
+else if (_vm is null)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else
+{
+    <div class="d-flex align-center gap-2 mb-4 flex-wrap">
+        <MudText Typo="Typo.h4">@_vm.Product.Title</MudText>
+        @if (_vm.IsListedForResale)
+        {
+            <MudChip T="string" Size="Size.Small" Color="Color.Secondary">owned asset</MudChip>
+        }
+        @if (_vm.ViewerHasReservation)
+        {
+            <MudChip T="string" Size="Size.Small" Color="Color.Info">reserved by you</MudChip>
+        }
+        <MudSpacer />
+        @RenderAction()
+    </div>
+
+    <MudGrid>
+        <MudItem xs="12" md="5">
+            @if (_vm.ImageFileIds.Count > 0)
+            {
+                <MudCarousel Class="rounded" Style="height:320px" ShowArrows="@(_vm.ImageFileIds.Count > 1)"
+                             ShowBullets="@(_vm.ImageFileIds.Count > 1)" AutoCycle="false" TData="Guid">
+                    @foreach (var fileId in _vm.ImageFileIds)
+                    {
+                        <MudCarouselItem>
+                            <MudImage Src="@($"/api/files/{fileId}")" Alt="@_vm.Product.Title"
+                                      ObjectFit="ObjectFit.Cover" Class="mud-width-full" Style="height:320px" />
+                        </MudCarouselItem>
+                    }
+                </MudCarousel>
+            }
+            else
+            {
+                <MudPaper Class="d-flex align-center justify-center" Style="height:320px" Outlined="true">
+                    <MudIcon Icon="@Icons.Material.Filled.Image" Size="Size.Large" Class="mud-text-secondary" />
+                </MudPaper>
+            }
+        </MudItem>
+
+        <MudItem xs="12" md="7">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudSimpleTable Dense="true" Hover="false" Elevation="0">
+                    <tbody>
+                        <tr><td>Current price</td><td>@MarketplaceFormat.Usd(_vm.CurrentPriceCents)</td></tr>
+                        <tr>
+                            <td>Growth last year</td>
+                            <td class="@(_vm.GrowthLast12MonthsCents >= 0 ? "mud-success-text" : "mud-error-text")">
+                                @MarketplaceFormat.SignedUsd(_vm.GrowthLast12MonthsCents)
+                            </td>
+                        </tr>
+                        <tr><td>Exists since</td><td>@_vm.Product.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd")</td></tr>
+                        <tr>
+                            <td>Held by</td>
+                            <td>@(_vm.IsMarketplaceHeld ? "the marketplace" : "a collector")</td>
+                        </tr>
+                        <tr>
+                            <td>Certificate ID</td>
+                            <td>
+                                <span style="font-family:var(--mud-typography-monospace-family, monospace)">@_certificateId</span>
+                                @if (_vm.ViewerIsCurrentOwner)
+                                {
+                                    <MudText Typo="Typo.caption" Class="mud-text-secondary d-block">Registered to you</MudText>
+                                }
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Description</td>
+                            <td>@(string.IsNullOrWhiteSpace(_vm.Product.Description) ? "—" : _vm.Product.Description)</td>
+                        </tr>
+                    </tbody>
+                </MudSimpleTable>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    <MudPaper Class="pa-4 mt-4" Elevation="1">
+        <div class="d-flex align-center gap-2 mb-2 flex-wrap">
+            <MudText Typo="Typo.subtitle1">Price history</MudText>
+            <MudSpacer />
+            <MudToggleGroup T="string" Value="_range" ValueChanged="OnRangeChanged" Size="Size.Small"
+                            Color="Color.Primary" CheckMark="false" SelectionMode="SelectionMode.SingleSelection">
+                @foreach (var r in PriceChartSampler.Ranges)
+                {
+                    <MudToggleItem Value="@r" Text="@r.ToUpperInvariant()" />
+                }
+            </MudToggleGroup>
+        </div>
+        <PriceChart Points="_chartPoints" AxisDateFormat="@_axisFormat" HoverDateFormat="@_hoverFormat" />
+    </MudPaper>
+
+    <MudButton Class="mt-4" Href="/marketplace" Variant="Variant.Text"
+               StartIcon="@Icons.Material.Filled.ArrowBack">Back to the marketplace</MudButton>
+}
+
+@code {
+    [Parameter] public string Slug { get; set; } = "";
+
+    [SupplyParameterFromQuery] public string? ChartRange { get; set; }
+
+    [CascadingParameter] private Task<AuthenticationState>? AuthState { get; set; }
+
+    private ProductViewModel? _vm;
+    private bool _notFound;
+    private string _certificateId = "";
+    private string _range = "all";
+    private IReadOnlyList<PriceChartPoint> _chartPoints = [];
+    private string _axisFormat = "MMM d";
+    private string _hoverFormat = "MMM d, HH:mm";
+    private ApplicationUser? _buyer;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var (id, email) = await ReadUserAsync();
+        _buyer = id is null ? null : new ApplicationUser { Id = id, Email = email };
+
+        _vm = await ProductView.BySlugAsync(Slug, _buyer, default);
+        _notFound = _vm is null;
+        if (_vm is null)
+        {
+            return;
+        }
+
+        _certificateId = CertificateId.For(
+            _vm.Product, _buyer,
+            currentOwnership: _vm.ViewerIsCurrentOwner ? new AssetOwnership { UserId = _buyer!.Id } : null,
+            isAdmin: await AuthState.IsInRoleAsync("Admin"));
+
+        var now = Clock.GetUtcNow();
+        _range = PriceChartSampler.NormalizeRange(ChartRange, _vm.Product.CreatedAt, now);
+        (_axisFormat, _hoverFormat) = FormatsFor(_range);
+        _chartPoints = PriceChartSampler.Sample(_vm.Product.PriceSeed, _vm.Product.CreatedAt, _range, now);
+    }
+
+    private void OnRangeChanged(string range) =>
+        Nav.NavigateTo(Nav.GetUriWithQueryParameter("chartRange", range), replace: true);
+
+    private async Task<(string? Id, string? Email)> ReadUserAsync()
+    {
+        if (AuthState is null)
+        {
+            return (null, null);
+        }
+
+        var user = (await AuthState).User;
+        return (user.FindFirstValue(ClaimTypes.NameIdentifier), user.FindFirstValue(ClaimTypes.Email));
+    }
+
+    private RenderFragment RenderAction() => _vm!.ViewerAction switch
+    {
+        ViewerAction.Buy => @<MudButton Color="Color.Primary" Variant="Variant.Filled"
+                                        StartIcon="@Icons.Material.Filled.ShoppingCart"
+                                        OnClick="BuyAsync">Buy @MarketplaceFormat.Usd(_vm!.CurrentPriceCents)</MudButton>,
+        ViewerAction.ListForResale => @<div class="d-flex gap-2">
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="ListAsync">List for resale</MudButton>
+            @if (_vm!.CanSellBack)
+            {
+                <MudButton Variant="Variant.Outlined" OnClick="SellBackAsync">Sell back to marketplace</MudButton>
+            }
+        </div>,
+        ViewerAction.Delist => @<div class="d-flex gap-2">
+            <MudButton Variant="Variant.Outlined" OnClick="DelistAsync">Delist</MudButton>
+            @if (_vm!.CanSellBack)
+            {
+                <MudButton Variant="Variant.Outlined" OnClick="SellBackAsync">Sell back to marketplace</MudButton>
+            }
+        </div>,
+        _ when _buyer is null => @<MudButton Variant="Variant.Text" Href="/Account/Login">Sign in to buy</MudButton>,
+        _ => @<text></text>,
+    };
+
+    private async Task BuyAsync()
+    {
+        try
+        {
+            var reservation = await Actions.ReserveAsync(_buyer!, _vm!.Product, _vm.ActiveListingId, default);
+
+            var parameters = new DialogParameters<BuyDialog>
+            {
+                { x => x.Product, _vm.Product },
+                { x => x.Reservation, reservation },
+                { x => x.Buyer, _buyer! },
+            };
+            var dialog = await DialogService.ShowAsync<BuyDialog>("Complete your purchase", parameters);
+            var result = await dialog.Result;
+
+            if (result is { Canceled: false })
+            {
+                await ReloadAsync();
+            }
+        }
+        catch (MarketplaceException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Warning);
+            await ReloadAsync();
+        }
+    }
+
+    private Task ListAsync() => RunAsync(() => Actions.ListForResaleAsync(_buyer!, _vm!.Product, default), "Listed for resale.");
+
+    private Task DelistAsync() => RunAsync(() => Actions.DelistAsync(_buyer!, _vm!.Product, default), "Delisted.");
+
+    private Task SellBackAsync() => RunAsync(() => Actions.SellBackAsync(_buyer!, _vm!.Product, default), "Sold back to the marketplace.");
+
+    private async Task RunAsync(Func<Task> action, string success)
+    {
+        try
+        {
+            await action();
+            Snackbar.Add(success, Severity.Success);
+        }
+        catch (MarketplaceException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Warning);
+        }
+
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _vm = await ProductView.BySlugAsync(Slug, _buyer, default);
+        StateHasChanged();
+    }
+
+    private static (string Axis, string Hover) FormatsFor(string range) => range switch
+    {
+        "24h" => ("HH:mm", "HH:mm"),
+        "7d" or "30d" => ("MMM d", "MMM d, HH:mm"),
+        "1y" => ("MMM d", "MMM d"),
+        _ => ("yyyy", "MMM yyyy"),
+    };
+}

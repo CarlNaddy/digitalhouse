@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Components.Authorization;
 
 namespace DigitalHouse.Components;
@@ -18,5 +19,18 @@ internal static class AuthStateExtensions
 
         var state = await authState;
         return state.User.IsInRole(role);
+    }
+
+    /// <summary>The signed-in user's id (the <see cref="ClaimTypes.NameIdentifier"/>
+    /// claim), or null when anonymous.</summary>
+    public static async Task<string?> UserIdAsync(this Task<AuthenticationState>? authState)
+    {
+        if (authState is null)
+        {
+            return null;
+        }
+
+        var state = await authState;
+        return state.User.FindFirstValue(ClaimTypes.NameIdentifier);
     }
 }
