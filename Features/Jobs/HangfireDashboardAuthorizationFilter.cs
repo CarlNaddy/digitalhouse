@@ -1,6 +1,6 @@
 using Hangfire.Dashboard;
 
-namespace DotnetAgenticStarterkit.Features.Jobs;
+namespace DigitalHouse.Features.Jobs;
 
 /// <summary>
 /// Gates the Hangfire dashboard (<c>/hangfire</c>) to the <c>Admin</c> role —

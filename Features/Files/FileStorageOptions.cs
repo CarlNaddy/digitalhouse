@@ -1,4 +1,4 @@
-namespace DotnetAgenticStarterkit.Features.Files;
+namespace DigitalHouse.Features.Files;
 
 /// <summary>
 /// File storage settings (parity plan P4.4), bound from config section

@@ -1,7 +1,7 @@
-using DotnetAgenticStarterkit.Data;
+using DigitalHouse.Data;
 using Microsoft.EntityFrameworkCore;
 
-namespace DotnetAgenticStarterkit.Tests.Infrastructure;
+namespace DigitalHouse.Tests.Infrastructure;
 
 /// <summary>
 /// Base class for tests that exercise a real PostgreSQL database. Derive from it,

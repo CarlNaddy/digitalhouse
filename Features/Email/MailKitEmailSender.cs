@@ -1,11 +1,11 @@
-using DotnetAgenticStarterkit.Data;
+using DigitalHouse.Data;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using MimeKit;
 
-namespace DotnetAgenticStarterkit.Features.Email;
+namespace DigitalHouse.Features.Email;
 
 /// <summary>
 /// Sends the Identity-triggered emails (parity plan P4.2) via MailKit, over

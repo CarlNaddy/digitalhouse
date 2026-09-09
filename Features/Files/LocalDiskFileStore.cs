@@ -1,8 +1,8 @@
-using DotnetAgenticStarterkit.Data;
+using DigitalHouse.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
-namespace DotnetAgenticStarterkit.Features.Files;
+namespace DigitalHouse.Features.Files;
 
 /// <summary>
 /// <see cref="IFileStore"/> over the local filesystem — the only provider

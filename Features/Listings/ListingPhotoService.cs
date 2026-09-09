@@ -1,8 +1,8 @@
-using DotnetAgenticStarterkit.Data;
-using DotnetAgenticStarterkit.Features.Files;
+using DigitalHouse.Data;
+using DigitalHouse.Features.Files;
 using Microsoft.EntityFrameworkCore;
 
-namespace DotnetAgenticStarterkit.Features.Listings;
+namespace DigitalHouse.Features.Listings;
 
 /// <summary>
 /// Attaches a photo to a <see cref="Listing"/> — the worked pattern for

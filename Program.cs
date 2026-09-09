@@ -1,13 +1,13 @@
-using DotnetAgenticStarterkit.Components;
-using DotnetAgenticStarterkit.Components.Account;
-using DotnetAgenticStarterkit.Data;
-using DotnetAgenticStarterkit.Data.Seed;
-using DotnetAgenticStarterkit.Endpoints;
-using DotnetAgenticStarterkit.Features.Console;
-using DotnetAgenticStarterkit.Features.Email;
-using DotnetAgenticStarterkit.Features.Files;
-using DotnetAgenticStarterkit.Features.Jobs;
-using DotnetAgenticStarterkit.Features.Listings;
+using DigitalHouse.Components;
+using DigitalHouse.Components.Account;
+using DigitalHouse.Data;
+using DigitalHouse.Data.Seed;
+using DigitalHouse.Endpoints;
+using DigitalHouse.Features.Console;
+using DigitalHouse.Features.Email;
+using DigitalHouse.Features.Files;
+using DigitalHouse.Features.Jobs;
+using DigitalHouse.Features.Listings;
 using Hangfire;
 using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Components.Web;
@@ -123,7 +123,7 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
 // same Postgres-stored keys wouldn't be recognized as belonging to "this app"
 // from both environments. See docs/deployment.md.
 builder.Services.AddDataProtection()
-    .SetApplicationName("DotnetAgenticStarterkit")
+    .SetApplicationName("DigitalHouse")
     .PersistKeysToDbContext<AppDbContext>();
 
 // P3.3: Register/Login static-SSR pages redirect via NavigationManager, which

@@ -1,8 +1,8 @@
-using DotnetAgenticStarterkit.Data;
+using DigitalHouse.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Hybrid;
 
-namespace DotnetAgenticStarterkit.Features.Listings;
+namespace DigitalHouse.Features.Listings;
 
 /// <summary>
 /// Cached reads for the <see cref="Listing"/> feature (parity plan P4.3) —

@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
-namespace DotnetAgenticStarterkit.Data.Seed;
+namespace DigitalHouse.Data.Seed;
 
 /// <summary>
 /// Inserts sample data when the database is empty. Idempotent — safe to run

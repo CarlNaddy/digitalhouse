@@ -1,6 +1,6 @@
-using DotnetAgenticStarterkit.Features.Files;
+using DigitalHouse.Features.Files;
 
-namespace DotnetAgenticStarterkit.Endpoints;
+namespace DigitalHouse.Endpoints;
 
 /// <summary>
 /// Serves whatever <see cref="IFileStore"/> holds (parity plan P4.4) —

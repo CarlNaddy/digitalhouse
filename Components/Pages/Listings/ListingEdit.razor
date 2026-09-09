@@ -1,6 +1,6 @@
 @page "/listings/{Id:int}/edit"
 @attribute [Authorize(Policy = "ListingsWriter")]
-@using DotnetAgenticStarterkit.Features.Listings
+@using DigitalHouse.Features.Listings
 @inject IDbContextFactory<AppDbContext> DbFactory
 @inject ListingQueries ListingQueries
 @inject ListingPhotoService PhotoService

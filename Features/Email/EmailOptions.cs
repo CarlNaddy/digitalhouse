@@ -1,4 +1,4 @@
-namespace DotnetAgenticStarterkit.Features.Email;
+namespace DigitalHouse.Features.Email;
 
 /// <summary>
 /// SMTP settings for outgoing mail (parity plan P4.2), bound from config
@@ -11,7 +11,7 @@ public class EmailOptions
 {
     public string Host { get; set; } = "localhost";
     public int Port { get; set; } = 2525;
-    public string From { get; set; } = "no-reply@DotnetAgenticStarterkit.local";
+    public string From { get; set; } = "no-reply@DigitalHouse.local";
     public string? Username { get; set; }
     public string? Password { get; set; }
     public bool UseSsl { get; set; }

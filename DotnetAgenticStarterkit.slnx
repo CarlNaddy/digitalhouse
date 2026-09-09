@@ -1,6 +1,0 @@
-<Solution>
-  <Folder Name="/tests/">
-    <Project Path="tests/DotnetAgenticStarterkit.Tests/DotnetAgenticStarterkit.Tests.csproj" />
-  </Folder>
-  <Project Path="DotnetAgenticStarterkit.csproj" />
-</Solution>

@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 
-namespace DotnetAgenticStarterkit.Data.Seed;
+namespace DigitalHouse.Data.Seed;
 
 /// <summary>
 /// Seeds the <c>Admin</c> role and a development admin user (parity plan P3.6).
@@ -12,7 +12,7 @@ public static class IdentitySeeder
 {
     public const string AdminRole = "Admin";
 
-    private const string DefaultAdminEmail = "admin@DotnetAgenticStarterkit.local";
+    private const string DefaultAdminEmail = "admin@DigitalHouse.local";
     private const string DefaultAdminPassword = "Admin!23456";
 
     public static async Task SeedAsync(

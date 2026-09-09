@@ -11,7 +11,7 @@
 # after `new-project.sh` confirm this value is free (`fly apps create` will
 # reject it otherwise) and change it if needed — it's yours to own from there.
 
-app = "dotnetagenticstarterkit"
+app = "digitalhouse"
 primary_region = "ams"        # Amsterdam, Netherlands
 
 [build]
@@ -20,7 +20,7 @@ primary_region = "ams"        # Amsterdam, Netherlands
   # otherwise look for a Dockerfile, which doesn't exist here on purpose.
 
 [deploy]
-  # The app does not auto-migrate on startup — only `dotnet DotnetAgenticStarterkit.dll
+  # The app does not auto-migrate on startup — only `dotnet DigitalHouse.dll
   # seed` does (applies pending migrations, then runs the idempotent sample +
   # admin seeders; see Data/Seed/SeedCommand.cs). Fly runs this in a temporary
   # machine, with the app's secrets and DB access, before each release goes

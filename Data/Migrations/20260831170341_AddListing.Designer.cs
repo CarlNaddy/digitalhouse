@@ -5,11 +5,11 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using DotnetAgenticStarterkit.Data;
+using DigitalHouse.Data;
 
 #nullable disable
 
-namespace DotnetAgenticStarterkit.Data.Migrations
+namespace DigitalHouse.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
     [Migration("20260831170341_AddListing")]
@@ -25,7 +25,7 @@ namespace DotnetAgenticStarterkit.Data.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("DotnetAgenticStarterkit.Data.Listing", b =>
+            modelBuilder.Entity("DigitalHouse.Data.Listing", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()

@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/tests/">
+    <Project Path="tests/DigitalHouse.Tests/DigitalHouse.Tests.csproj" />
+  </Folder>
+  <Project Path="DigitalHouse.csproj" />
+</Solution>

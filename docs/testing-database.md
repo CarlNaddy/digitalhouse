@@ -25,7 +25,7 @@ nowhere — if Docker is down they *fail*. Keep them a minority of the suite.
 ## How it's wired
 
 ```
-tests/DotnetAgenticStarterkit.Tests/Infrastructure/
+tests/DigitalHouse.Tests/Infrastructure/
   PostgresFixture.cs              # starts one container, applies migrations once
   DatabaseCollectionDefinition.cs # [CollectionDefinition] — all DB tests share the container
   DatabaseTest.cs                 # base class: CreateContext(), per-test reset, Ct helper

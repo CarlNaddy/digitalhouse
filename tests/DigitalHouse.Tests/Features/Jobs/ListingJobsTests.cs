@@ -1,10 +1,10 @@
-using DotnetAgenticStarterkit.Features.Jobs;
-using DotnetAgenticStarterkit.Tests.Infrastructure;
-using DotnetAgenticStarterkit.Tests.TestData;
+using DigitalHouse.Features.Jobs;
+using DigitalHouse.Tests.Infrastructure;
+using DigitalHouse.Tests.TestData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace DotnetAgenticStarterkit.Tests.Features.Jobs;
+namespace DigitalHouse.Tests.Features.Jobs;
 
 /// <summary>
 /// Database-tier tests (parity plan P4.1) for the worked background-job

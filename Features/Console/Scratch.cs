@@ -1,7 +1,7 @@
-using DotnetAgenticStarterkit.Data;
+using DigitalHouse.Data;
 using Microsoft.EntityFrameworkCore;
 
-namespace DotnetAgenticStarterkit.Features.Console;
+namespace DigitalHouse.Features.Console;
 
 /// <summary>
 /// The <c>rails console</c> substitute (parity plan P6.2). Edit this method,

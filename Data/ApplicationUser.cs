@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 
-namespace DotnetAgenticStarterkit.Data;
+namespace DigitalHouse.Data;
 
 /// <summary>
 /// The application user — the ASP.NET Core Identity user for this app

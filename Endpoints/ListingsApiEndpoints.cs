@@ -1,8 +1,8 @@
-using DotnetAgenticStarterkit.Data;
-using DotnetAgenticStarterkit.Features.Listings;
+using DigitalHouse.Data;
+using DigitalHouse.Features.Listings;
 using Microsoft.AspNetCore.Mvc;
 
-namespace DotnetAgenticStarterkit.Endpoints;
+namespace DigitalHouse.Endpoints;
 
 /// <summary>
 /// JSON API over <see cref="Listing"/> — reads (P4.3's worked surface for

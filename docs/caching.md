@@ -71,7 +71,7 @@ Endpoints/ListingsApiEndpoints.cs     # GET /api/listings, GET /api/listings/{id
 
 ## Testing
 
-`ListingQueriesTests` (`tests/DotnetAgenticStarterkit.Tests/Features/Listings/`, P2.3
+`ListingQueriesTests` (`tests/DigitalHouse.Tests/Features/Listings/`, P2.3
 Testcontainers pattern) proves both halves against real Postgres: a second
 read is served from the cache — not the database — until `InvalidateAsync`
 is called, then reflects the change. **Don't** test `HybridCache`/

@@ -1,9 +1,9 @@
-using DotnetAgenticStarterkit.Data;
-using DotnetAgenticStarterkit.Tests.Infrastructure;
-using DotnetAgenticStarterkit.Tests.TestData;
+using DigitalHouse.Data;
+using DigitalHouse.Tests.Infrastructure;
+using DigitalHouse.Tests.TestData;
 using Microsoft.EntityFrameworkCore;
 
-namespace DotnetAgenticStarterkit.Tests.Data;
+namespace DigitalHouse.Tests.Data;
 
 /// <summary>
 /// The P2.3 database-tier smoke test: a <see cref="Listing"/> survives a real

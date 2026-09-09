@@ -83,7 +83,7 @@ Features/Email/
 ## Testing
 
 `RazorEmailRenderer` is pure and deterministic — no SMTP, no database —
-tested directly (`tests/DotnetAgenticStarterkit.Tests/Features/Email/RazorEmailRendererTests.cs`):
+tested directly (`tests/DigitalHouse.Tests/Features/Email/RazorEmailRendererTests.cs`):
 construct an `HtmlRenderer` over an empty `IServiceProvider` and a
 `NullLoggerFactory`, render a template, assert on the output. **Don't** test
 MailKit's own SMTP behavior — that's the library's job. The full send path

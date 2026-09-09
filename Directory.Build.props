@@ -2,7 +2,7 @@
 
   <!--
     Solution-wide build settings. Applies to every project in the repo
-    (currently just DotnetAgenticStarterkit.csproj; the test project added in P2.1 will
+    (currently just DigitalHouse.csproj; the test project added in P2.1 will
     inherit this too). Project-specific settings stay in the .csproj.
   -->
 

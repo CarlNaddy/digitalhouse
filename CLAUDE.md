@@ -1,4 +1,4 @@
-# DotnetAgenticStarterkit
+# DigitalHouse
 
 ASP.NET Core + **Blazor Web App** with **MudBlazor** for all UI.
 
@@ -20,13 +20,13 @@ ASP.NET Core + **Blazor Web App** with **MudBlazor** for all UI.
 | Email | MailKit via ASP.NET Core Identity's `IEmailSender<TUser>`; Razor-component templates rendered by `HtmlRenderer`; dev sink `smtp4dev` (`compose.yaml`); confirm-before-login + forgot/reset password wired (parity plan P4.2) |
 | Caching / rate limiting | First-party only: `HybridCache` (in-memory, in front of the `Listings` JSON API), `OutputCache`, `AddRateLimiter`; a Redis `IDistributedCache` backplane is vNext (parity plan P4.3) |
 | File storage | `IFileStore` seam, `LocalDiskFileStore` today, config-driven provider switch for a blob provider later; worked pattern is a `Listing` photo (parity plan P4.4) |
-| Tests | xUnit v3 on the Microsoft Testing Platform — `tests/DotnetAgenticStarterkit.Tests/` |
+| Tests | xUnit v3 on the Microsoft Testing Platform — `tests/DigitalHouse.Tests/` |
 | Deployment | SDK container publish (`dotnet publish -t:PublishContainer`, no Dockerfile); `bash scripts/run-stack.sh` = full local stack in one command; Data Protection keys in Postgres, `/health` + `/alive` (parity plan P5.1–P5.2, P5.4); CI/CD to a live target open (P5.3) |
 
 ## Build / run / test
 
-Solution `DotnetAgenticStarterkit.slnx` holds the web app (`DotnetAgenticStarterkit.csproj`) and the
-test project (`tests/DotnetAgenticStarterkit.Tests/`). Package versions are centrally
+Solution `DigitalHouse.slnx` holds the web app (`DigitalHouse.csproj`) and the
+test project (`tests/DigitalHouse.Tests/`). Package versions are centrally
 managed in `Directory.Packages.props`.
 
 ```bash
@@ -104,7 +104,7 @@ Full render-mode × auth matrix and pitfalls: `dotnet-blazor:configure-auth`.
 - **Admin seed (P3.6):** `dotnet run -- seed` also runs
   `Data/Seed/IdentitySeeder.cs` — creates the `Admin` role and a dev admin user
   if missing (idempotent). Credentials from config keys `Seed:AdminEmail` /
-  `Seed:AdminPassword`; the dev default is `admin@DotnetAgenticStarterkit.local` /
+  `Seed:AdminPassword`; the dev default is `admin@DigitalHouse.local` /
   `Admin!23456`. Outside Development a `Seed:AdminPassword` **must** be supplied
   — the seeder throws rather than use the built-in default.
 - **Identity UI:** hand-authored Razor pages under `Components/Account/`
@@ -196,7 +196,7 @@ never touches it. Decisions, the worked pattern, and how to add a new job:
   a substitute for an actual audit trail.
 - **Testing:** job bodies are ordinary `AppDbContext` consumers — test them the
   P2.3 way, against real Postgres via `DatabaseTest`
-  (`tests/DotnetAgenticStarterkit.Tests/Features/Jobs/ListingJobsTests.cs` is the worked
+  (`tests/DigitalHouse.Tests/Features/Jobs/ListingJobsTests.cs` is the worked
   example). Don't test Hangfire's own scheduling/dispatch.
 
 ## Email
@@ -234,7 +234,7 @@ worked pattern, and how to add a new email:
   not driven by a page here.
 - **Testing:** `RazorEmailRenderer` is pure and deterministic (no SMTP, no
   database) — tested directly
-  (`tests/DotnetAgenticStarterkit.Tests/Features/Email/RazorEmailRendererTests.cs`).
+  (`tests/DigitalHouse.Tests/Features/Email/RazorEmailRendererTests.cs`).
   Don't test MailKit's own SMTP behavior; the full send path was verified
   manually end-to-end (see `docs/email.md`), not as an automated test.
 
@@ -262,7 +262,7 @@ Decisions and the worked pattern: [`docs/caching.md`](docs/caching.md).
   handler. A cache with no invalidation path ships stale data — don't add a
   cached read without also wiring its invalidation.
 - **Testing:** `ListingQueriesTests`
-  (`tests/DotnetAgenticStarterkit.Tests/Features/Listings/`, P2.3 pattern) proves
+  (`tests/DigitalHouse.Tests/Features/Listings/`, P2.3 pattern) proves
   caching *and* invalidation against real Postgres. Don't test the
   framework's own `HybridCache`/`OutputCache`/`AddRateLimiter` internals —
   the `Age` header and the rate limiter's `429` were verified manually
@@ -302,7 +302,7 @@ and the worked pattern: [`docs/file-storage.md`](docs/file-storage.md).
   lowering Kestrel's default globally would silently cap every other
   endpoint too.
 - **Testing:** `LocalDiskFileStoreTests` and `ListingPhotoServiceTests`
-  (`tests/DotnetAgenticStarterkit.Tests/Features/Files/` and `.../Listings/`) test
+  (`tests/DigitalHouse.Tests/Features/Files/` and `.../Listings/`) test
   against a *real* `LocalDiskFileStore` (a throwaway temp dir + real
   Postgres), not a fake — matching how the rest of this suite avoids mocks.
 
@@ -329,7 +329,7 @@ Official Microsoft container guidance throughout (parity plan **P5**) — no
 Dockerfile to maintain, no Aspire. Decisions, the worked commands, and full
 verification notes: [`docs/deployment.md`](docs/deployment.md).
 
-- **Container image (P5.1):** `dotnet publish DotnetAgenticStarterkit.csproj
+- **Container image (P5.1):** `dotnet publish DigitalHouse.csproj
   -t:PublishContainer -c Release` — the SDK's built-in container publish
   (`Microsoft.NET.Build.Containers`), not a hand-maintained `Dockerfile`.
   Base image/tag resolve from `TargetFramework`
@@ -391,7 +391,7 @@ verification notes: [`docs/deployment.md`](docs/deployment.md).
   reasoning as P5.1's self-deriving `ContainerRepository`. `fly.toml` has no
   `[build]` section on purpose (this repo has no Dockerfile; the workflow
   always passes `--image` explicitly); its `app` line is a placeholder
-  (`"dotnetagenticstarterkit"`, the lowercased project identifier — same form
+  (`"digitalhouse"`, the lowercased project identifier — same form
   as `compose.yaml`'s `${APP_IMAGE:-…}` fallback). `scripts/new-project.sh`
   rewrites it to `lower("<NewName>")` on rename, like every other lowercased
   occurrence. Fly app names must also be globally unique, so after the rename
@@ -504,11 +504,11 @@ Scaffolding alternative: `dotnet new install MudBlazor.Templates`.
 
 ### Project layout (decided in P0.2)
 
-**Single project.** `DotnetAgenticStarterkit.csproj` is the whole app; organize by concern
+**Single project.** `DigitalHouse.csproj` is the whole app; organize by concern
 in folders, not by extracting class-library projects.
 
 ```
-DotnetAgenticStarterkit.csproj
+DigitalHouse.csproj
   Components/    Blazor UI (Layout/, Pages/, shared components)
   Data/          AppDbContext, entities, EF Core migrations, seeders
   Features/      application logic — one folder per feature (services, handlers)
@@ -539,7 +539,7 @@ project.
   (IDExxxx) rules run in the IDE and `dotnet format`, not the build —
   `EnforceCodeStyleInBuild` stays `false`; flip it to `true` once
   `dotnet format --verify-no-changes` runs clean (not a blocker).
-- Format check: `dotnet format DotnetAgenticStarterkit.slnx --verify-no-changes`.
+- Format check: `dotnet format DigitalHouse.slnx --verify-no-changes`.
 - **Central package management** (`Directory.Packages.props`,
   `ManagePackageVersionsCentrally=true` + transitive pinning): every version
   lives there; `.csproj` `PackageReference`s carry no `Version`.
@@ -547,7 +547,7 @@ project.
 ### Naming & style
 
 - File-scoped namespaces; namespace mirrors the folder
-  (`DotnetAgenticStarterkit.Features.Listings`).
+  (`DigitalHouse.Features.Listings`).
 - One public type per file; file name matches the type.
 - `_camelCase` private fields; `PascalCase` types / members / constants;
   `camelCase` locals & parameters; `I`-prefixed interfaces. Async methods end
@@ -607,8 +607,8 @@ project.
 
 ### Tests
 
-- One test project: `tests/DotnetAgenticStarterkit.Tests/` (xUnit v3, `namespace
-  DotnetAgenticStarterkit.Tests.*` mirroring the folder). Run with `dotnet test`.
+- One test project: `tests/DigitalHouse.Tests/` (xUnit v3, `namespace
+  DigitalHouse.Tests.*` mirroring the folder). Run with `dotnet test`.
 - **MTP mode:** `global.json` opts `dotnet test` into the Microsoft Testing
   Platform (`"test": { "runner": "Microsoft.Testing.Platform" }`); the test
   project is `OutputType=Exe`. No `Microsoft.NET.Test.Sdk`.
@@ -618,7 +618,7 @@ project.
 - Test method names: `Method_under_test_does_x` (underscores; CA1707 is off).
   Assertions must be deterministic — no clock, network, process, or real
   filesystem.
-- **Test data:** fluent builders under `tests/DotnetAgenticStarterkit.Tests/TestData/`, one
+- **Test data:** fluent builders under `tests/DigitalHouse.Tests/TestData/`, one
   per entity (`ListingBuilder` is the worked example — P2.2). Valid-by-default,
   `With*` methods to pin the fields a test cares about, `Build()` / `BuildMany(n)`
   / static `Valid()`. Defaults come from `Bogus` with a **fixed seed** so
@@ -627,7 +627,7 @@ project.
 - **Database tests (P2.3):** the tier that hits `AppDbContext` runs against **real
   PostgreSQL in a throwaway `Testcontainers` container** — never SQLite / EF
   in-memory (parity plan P1.1: one provider everywhere). Infrastructure in
-  `tests/DotnetAgenticStarterkit.Tests/Infrastructure/` — `PostgresFixture` (one container
+  `tests/DigitalHouse.Tests/Infrastructure/` — `PostgresFixture` (one container
   per run, migrations applied once, shared via `[Collection("database")]`),
   `DatabaseTest` base class (`CreateContext()`, per-test table wipe via
   `ResetAsync`, `Ct` token). `ListingPersistenceTests` is the worked example.
@@ -683,6 +683,6 @@ template repo itself does, so the check only ever fires by mistake. Bypass with
 `new-project.sh` records the template commit it branched from in
 `.template-version`; a spun-off project pulls later template changes with
 `bash scripts/update-from-template.sh` (diffs the template forward from that
-baseline, rewrites the `DotnetAgenticStarterkit` identifier in the diff, 3-way applies;
+baseline, rewrites the `DigitalHouse` identifier in the diff, 3-way applies;
 never touches `README.md` / `CLAUDE.md` / `compose.yaml`). See
 [`docs/updating-from-template.md`](docs/updating-from-template.md).

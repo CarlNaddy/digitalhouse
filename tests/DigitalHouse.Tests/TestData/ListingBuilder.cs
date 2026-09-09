@@ -1,7 +1,7 @@
 using Bogus;
-using DotnetAgenticStarterkit.Data;
+using DigitalHouse.Data;
 
-namespace DotnetAgenticStarterkit.Tests.TestData;
+namespace DigitalHouse.Tests.TestData;
 
 /// <summary>
 /// Fluent test-data builder for <see cref="Listing"/> — the FactoryBot / object-mother

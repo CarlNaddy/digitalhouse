@@ -1,8 +1,8 @@
-using DotnetAgenticStarterkit.Data;
+using DigitalHouse.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
-namespace DotnetAgenticStarterkit.Endpoints;
+namespace DigitalHouse.Endpoints;
 
 public static class AccountEndpoints
 {

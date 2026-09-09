@@ -5,11 +5,11 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using DotnetAgenticStarterkit.Data;
+using DigitalHouse.Data;
 
 #nullable disable
 
-namespace DotnetAgenticStarterkit.Data.Migrations
+namespace DigitalHouse.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
     [Migration("20260902221217_AddDataProtectionKeys")]
@@ -176,7 +176,7 @@ namespace DotnetAgenticStarterkit.Data.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("DotnetAgenticStarterkit.Data.ApplicationUser", b =>
+            modelBuilder.Entity("DigitalHouse.Data.ApplicationUser", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("text");
@@ -240,7 +240,7 @@ namespace DotnetAgenticStarterkit.Data.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("DotnetAgenticStarterkit.Data.JobRun", b =>
+            modelBuilder.Entity("DigitalHouse.Data.JobRun", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -264,7 +264,7 @@ namespace DotnetAgenticStarterkit.Data.Migrations
                     b.ToTable("JobRuns");
                 });
 
-            modelBuilder.Entity("DotnetAgenticStarterkit.Data.Listing", b =>
+            modelBuilder.Entity("DigitalHouse.Data.Listing", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -320,7 +320,7 @@ namespace DotnetAgenticStarterkit.Data.Migrations
                     b.ToTable("Listings");
                 });
 
-            modelBuilder.Entity("DotnetAgenticStarterkit.Data.StoredFile", b =>
+            modelBuilder.Entity("DigitalHouse.Data.StoredFile", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -356,7 +356,7 @@ namespace DotnetAgenticStarterkit.Data.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
                 {
-                    b.HasOne("DotnetAgenticStarterkit.Data.ApplicationUser", null)
+                    b.HasOne("DigitalHouse.Data.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -365,7 +365,7 @@ namespace DotnetAgenticStarterkit.Data.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
                 {
-                    b.HasOne("DotnetAgenticStarterkit.Data.ApplicationUser", null)
+                    b.HasOne("DigitalHouse.Data.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -380,7 +380,7 @@ namespace DotnetAgenticStarterkit.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("DotnetAgenticStarterkit.Data.ApplicationUser", null)
+                    b.HasOne("DigitalHouse.Data.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -389,7 +389,7 @@ namespace DotnetAgenticStarterkit.Data.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
-                    b.HasOne("DotnetAgenticStarterkit.Data.ApplicationUser", null)
+                    b.HasOne("DigitalHouse.Data.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)

@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
-using DotnetAgenticStarterkit.Data;
+using DigitalHouse.Data;
 
-namespace DotnetAgenticStarterkit.Tests.Data;
+namespace DigitalHouse.Tests.Data;
 
 /// <summary>
 /// Smoke tests for the P2.1 harness — exercise a real production type

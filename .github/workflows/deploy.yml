@@ -44,7 +44,7 @@ jobs:
       # PascalCase project names, e.g. "Contoso.Portal", by design). Compute
       # the safe form once here and reuse it for both the publish step and
       # the flyctl --image reference below, so they can never drift apart —
-      # same reasoning as DotnetAgenticStarterkit.csproj's self-lowercasing
+      # same reasoning as DigitalHouse.csproj's self-lowercasing
       # ContainerRepository (see docs/deployment.md).
       - name: Compute the image repository (must be lowercase)
         id: image

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 
-namespace DotnetAgenticStarterkit.Features.Email;
+namespace DigitalHouse.Features.Email;
 
 /// <summary>
 /// Renders a Razor component to an HTML string — the "Razor-templated bodies"

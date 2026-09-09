@@ -5,11 +5,11 @@
 #   docker compose down -v          # stop and wipe the database
 #
 # `app` uses the image `dotnet publish -t:PublishContainer` builds (P5.1,
-# DotnetAgenticStarterkit.csproj) — not a Dockerfile `build:` section, so the image must
+# DigitalHouse.csproj) — not a Dockerfile `build:` section, so the image must
 # already exist locally before `docker compose up` includes it; run
 # scripts/run-stack.sh instead of a bare `docker compose up` to get both
 # steps as one command. `run-stack.sh` also sets $APP_IMAGE below, lowercased
-# from the .csproj name to match what DotnetAgenticStarterkit.csproj's ContainerRepository
+# from the .csproj name to match what DigitalHouse.csproj's ContainerRepository
 # actually builds — a bare `docker compose up` (no $APP_IMAGE) falls back to
 # the template's own literal name, only correct for this repo unrenamed. Dev
 # connection string for the *host* dev loop (`dotnet watch run`) goes in
@@ -22,15 +22,15 @@ services:
     image: postgres:17
     restart: unless-stopped
     environment:
-      POSTGRES_DB: DotnetAgenticStarterkit
-      POSTGRES_USER: DotnetAgenticStarterkit
+      POSTGRES_DB: DigitalHouse
+      POSTGRES_USER: DigitalHouse
       POSTGRES_PASSWORD: dev_only_change_me
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U DotnetAgenticStarterkit -d DotnetAgenticStarterkit"]
+      test: ["CMD-SHELL", "pg_isready -U DigitalHouse -d DigitalHouse"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -51,7 +51,7 @@ services:
   # `db`/`mail` by their service names, not localhost — a different network
   # namespace than the host-side dev loop uses.
   app:
-    image: ${APP_IMAGE:-dotnetagenticstarterkit}:latest
+    image: ${APP_IMAGE:-digitalhouse}:latest
     restart: unless-stopped
     depends_on:
       db:
@@ -60,7 +60,7 @@ services:
         condition: service_started
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__Default: "Host=db;Port=5432;Database=DotnetAgenticStarterkit;Username=DotnetAgenticStarterkit;Password=dev_only_change_me"
+      ConnectionStrings__Default: "Host=db;Port=5432;Database=DigitalHouse;Username=DigitalHouse;Password=dev_only_change_me"
       Email__Host: mail
       Email__Port: "25"
     ports:

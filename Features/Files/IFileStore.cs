@@ -1,6 +1,6 @@
-using DotnetAgenticStarterkit.Data;
+using DigitalHouse.Data;
 
-namespace DotnetAgenticStarterkit.Features.Files;
+namespace DigitalHouse.Features.Files;
 
 /// <summary>
 /// File storage abstraction (parity plan P4.4, ActiveStorage analog) — the

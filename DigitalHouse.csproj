@@ -3,14 +3,14 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <!-- Nullable, ImplicitUsings, LangVersion, analyzers: see Directory.Build.props -->
-    <UserSecretsId>230b5278-ccf0-4f1b-9ff6-0692cadb3827</UserSecretsId>
+    <UserSecretsId>60b5884c-8b9b-42dc-8617-3c04018558be</UserSecretsId>
   </PropertyGroup>
 
   <!-- Container image (parity plan P5.1) — the built-in .NET SDK container
        publish, not a hand-maintained Dockerfile: `dotnet publish
        -t:PublishContainer`. Base image + tag resolve automatically from
        TargetFramework (mcr.microsoft.com/dotnet/aspnet:10.0). Repository name
-       is self-derived, not a literal "DotnetAgenticStarterkit" string — Docker/OCI
+       is self-derived, not a literal "DigitalHouse" string — Docker/OCI
        repository names must be lowercase, but this repo's own template
        rename (scripts/new-project.sh) produces PascalCase project names
        (e.g. "Contoso.Portal", the documented example) by design, and a

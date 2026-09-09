@@ -1,12 +1,12 @@
 using System.Text;
-using DotnetAgenticStarterkit.Data;
-using DotnetAgenticStarterkit.Features.Files;
-using DotnetAgenticStarterkit.Tests.Infrastructure;
+using DigitalHouse.Data;
+using DigitalHouse.Features.Files;
+using DigitalHouse.Tests.Infrastructure;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
-namespace DotnetAgenticStarterkit.Tests.Features.Files;
+namespace DigitalHouse.Tests.Features.Files;
 
 /// <summary>
 /// <see cref="LocalDiskFileStore"/> against real Postgres (metadata) and a
@@ -89,7 +89,7 @@ public sealed class LocalDiskFileStoreTests(PostgresFixture fixture) : DatabaseT
     {
         public string ContentRootPath { get; set; } = "";
         public string EnvironmentName { get; set; } = "Test";
-        public string ApplicationName { get; set; } = "DotnetAgenticStarterkit.Tests";
+        public string ApplicationName { get; set; } = "DigitalHouse.Tests";
         public IFileProvider ContentRootFileProvider { get; set; } = null!;
     }
 }

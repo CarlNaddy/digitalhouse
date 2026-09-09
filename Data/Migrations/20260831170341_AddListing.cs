@@ -4,7 +4,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace DotnetAgenticStarterkit.Data.Migrations
+namespace DigitalHouse.Data.Migrations
 {
     /// <inheritdoc />
     public partial class AddListing : Migration

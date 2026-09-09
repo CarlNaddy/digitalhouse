@@ -84,10 +84,10 @@ Endpoints/
 
 ## Testing
 
-`LocalDiskFileStoreTests` (`tests/DotnetAgenticStarterkit.Tests/Features/Files/`) —
+`LocalDiskFileStoreTests` (`tests/DigitalHouse.Tests/Features/Files/`) —
 save/read/delete round-trips against real Postgres (metadata) and a
 throwaway temp directory (bytes), P2.3 `DatabaseTest` pattern.
-`ListingPhotoServiceTests` (`tests/DotnetAgenticStarterkit.Tests/Features/Listings/`) —
+`ListingPhotoServiceTests` (`tests/DigitalHouse.Tests/Features/Listings/`) —
 the actual business logic: magic-byte rejection, attach/replace, the
 missing-listing case, and delete-with-photo-cleanup — against a *real*
 `LocalDiskFileStore`, not a fake, matching how the rest of this suite tests

@@ -9,12 +9,12 @@ instance by default.
 ## Where they live
 
 ```
-tests/DotnetAgenticStarterkit.Tests/TestData/
+tests/DigitalHouse.Tests/TestData/
   ListingBuilder.cs        # one builder per entity
   ListingBuilderTests.cs   # guards the builder itself
 ```
 
-Namespace `DotnetAgenticStarterkit.Tests.TestData`, mirroring the folder (same rule as the
+Namespace `DigitalHouse.Tests.TestData`, mirroring the folder (same rule as the
 rest of the test project).
 
 ## The shape
@@ -67,7 +67,7 @@ IReadOnlyList<Listing> page = new ListingBuilder().BuildMany(25);
 
 ## Adding a builder for a new entity
 
-1. `tests/DotnetAgenticStarterkit.Tests/TestData/<Entity>Builder.cs`, `sealed`, same member
+1. `tests/DigitalHouse.Tests/TestData/<Entity>Builder.cs`, `sealed`, same member
    contract as the table above.
 2. Seed the `Faker<T>` in the constructor; every `RuleFor` must stay inside the
    entity's data-annotation constraints so `Build()` is valid by default.

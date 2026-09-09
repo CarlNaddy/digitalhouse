@@ -1,4 +1,4 @@
-namespace DotnetAgenticStarterkit.Tests.Infrastructure;
+namespace DigitalHouse.Tests.Infrastructure;
 
 /// <summary>
 /// Binds <see cref="PostgresFixture"/> to a single xUnit collection so every

@@ -30,7 +30,7 @@ CSPROJ="$(ls "$ROOT"/*.csproj | head -1)"
 # uppercase; MSBuildProjectName.ToLowerInvariant() in the .csproj already
 # handles this for `dotnet publish` itself, but compose.yaml can't evaluate
 # MSBuild functions, so this script computes the same value and exports it
-# for compose.yaml's ${APP_IMAGE:-dotnetagenticstarterkit} to pick up.
+# for compose.yaml's ${APP_IMAGE:-digitalhouse} to pick up.
 export APP_IMAGE
 APP_IMAGE="$(basename "$CSPROJ" .csproj | tr '[:upper:]' '[:lower:]')"
 

@@ -1,4 +1,4 @@
-# Productivity benchmark: DotnetAgenticStarterkit vs. Rails vs. Laravel
+# Productivity benchmark: DigitalHouse vs. Rails vs. Laravel
 
 A qualitative scorecard comparing this template's developer productivity
 against the two frameworks it's explicitly modeled on. This is **not** a
@@ -6,7 +6,7 @@ timed, empirical build — it's a dimension-by-dimension comparison of each
 framework's *documented, default* conventions, backed by version-pinned
 sources. See "Methodology" below for what that means and doesn't mean.
 
-**Versions compared:** DotnetAgenticStarterkit (this repo, .NET 10) · **Ruby on Rails
+**Versions compared:** DigitalHouse (this repo, .NET 10) · **Ruby on Rails
 8.0** · **Laravel 13** (current as of March 2026).
 
 Legend: ✅ first-party, minimal setup · 🟡 available, some setup or a
@@ -17,7 +17,7 @@ well-known third-party package · ⚠️ possible, but mostly hand-rolled ·
 
 ## Scorecard
 
-| Dimension | DotnetAgenticStarterkit | Rails 8 | Laravel 13 |
+| Dimension | DigitalHouse | Rails 8 | Laravel 13 |
 |---|---|---|---|
 | **New project → running app** | 🟡 `dotnet new blazor` + MudBlazor wiring, or clone this template (`scripts/new-project.sh`) — several manual steps either way | ✅ `rails new app` — one command, running app with SQLite in seconds | ✅ `laravel new app` or `composer create-project` — one command, several starter kits (React/Vue/Svelte/Livewire) with auth wired |
 | **Model + reversible migrations** | ✅ EF Core migrations (`dotnet ef migrations add/update`) — reversible, C#-typed, compile-checked | ✅ the original — `rails g migration`, `db:migrate`/`db:rollback`, the format every other framework copied | ✅ Eloquent migrations (`php artisan make:migration`), `migrate`/`migrate:rollback` — same shape as Rails' |
@@ -40,13 +40,13 @@ well-known third-party package · ⚠️ possible, but mostly hand-rolled ·
 
 ## Reading the results
 
-**Where DotnetAgenticStarterkit is genuinely ahead:** type safety (compile-time checking beats both dynamic languages outright), test rigor (real Postgres via Testcontainers by default, not an in-memory/SQLite shortcut), and the AI-agent-tooling angle — a pinned skill marketplace is a different kind of "productivity" than either Rails or Laravel offers, and it's the one dimension unique to this template's design.
+**Where DigitalHouse is genuinely ahead:** type safety (compile-time checking beats both dynamic languages outright), test rigor (real Postgres via Testcontainers by default, not an in-memory/SQLite shortcut), and the AI-agent-tooling angle — a pinned skill marketplace is a different kind of "productivity" than either Rails or Laravel offers, and it's the one dimension unique to this template's design.
 
 **Where Rails 8 is genuinely ahead:** breadth and zero-dependency defaults. Solid Queue/Cache/Cable removing the Redis requirement entirely, Kamal making self-hosted deploy a one-liner, and a scaffold generator that still produces more out of one command than any .NET tooling does — these are the product of two decades of "convention over configuration" refinement that this template is explicitly still working toward (see `docs/rails-parity-plan.md`).
 
 **Where Laravel 13 is genuinely ahead:** the admin-panel and starter-kit ecosystem (Filament, Nova, WorkOS-backed auth) is the strongest "install and you're done" story of the three, and its new AI SDK shows the same instinct this template has — treating AI-assisted development as a first-class framework concern — aimed at a different layer (building AI *features*, not an agent build *convention* system).
 
-**The honest gap:** DotnetAgenticStarterkit is a single-maintainer template a few months old; Rails (2004) and Laravel (2011) are the product of enormous communities and years of gem/package ecosystem growth. Several ✅ rows above for Rails/Laravel represent a mature package one command away; the equivalent DotnetAgenticStarterkit rows often represent a pattern this repo had to design and verify itself, one phase at a time, precisely because no first-party or de facto standard package exists yet in .NET for that concern (background jobs, email, admin panels).
+**The honest gap:** DigitalHouse is a single-maintainer template a few months old; Rails (2004) and Laravel (2011) are the product of enormous communities and years of gem/package ecosystem growth. Several ✅ rows above for Rails/Laravel represent a mature package one command away; the equivalent DigitalHouse rows often represent a pattern this repo had to design and verify itself, one phase at a time, precisely because no first-party or de facto standard package exists yet in .NET for that concern (background jobs, email, admin panels).
 
 ---
 
@@ -56,6 +56,6 @@ This is a **desk-research comparison**, not a timed build. Each cell reflects:
 
 - What ships in a **default new app** for Rails/Laravel (`rails new`, `laravel new`, no extra gems/packages beyond what the generator installs), versus what this repo's template provides after following its own setup docs
 - Version-pinned, current sources: [Rails 8.0 release notes](https://guides.rubyonrails.org/8_0_release_notes.html), [Laravel 13.x release notes](https://laravel.com/docs/13.x/releases) — fetched fresh for this document, not recalled from training data, since both frameworks ship fast-moving annual majors
-- This repo's own `docs/rails-parity-plan.md`, which already tracks the DotnetAgenticStarterkit-vs-Rails comparison in much finer detail per phase
+- This repo's own `docs/rails-parity-plan.md`, which already tracks the DigitalHouse-vs-Rails comparison in much finer detail per phase
 
 **What this deliberately does not measure:** actual time-to-ship a real feature, lines of code, onboarding time for a new hire, runtime performance, or hiring-market size. If you want that kind of evidence instead of documented-convention comparison, the next step is the "empirical" option — scaffold the same small CRUD-with-auth feature in a fresh Rails app, a fresh Laravel app, and this template, and count real commands/steps/LOC. Ruby, PHP, Composer, and the Laravel installer are already available in this environment if that's wanted later (the `rails` gem shim needs a fix first — its shebang points at a missing Ruby path).

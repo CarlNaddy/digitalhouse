@@ -1,10 +1,10 @@
-using DotnetAgenticStarterkit.Features.Email;
-using DotnetAgenticStarterkit.Features.Email.Templates;
+using DigitalHouse.Features.Email;
+using DigitalHouse.Features.Email.Templates;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace DotnetAgenticStarterkit.Tests.Features.Email;
+namespace DigitalHouse.Tests.Features.Email;
 
 /// <summary>
 /// The pure, deterministic half of parity plan P4.2's email feature — no SMTP,

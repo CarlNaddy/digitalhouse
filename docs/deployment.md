@@ -8,7 +8,7 @@ decision).
 ## P5.1 — Container image: the SDK's built-in container publish
 
 ```bash
-dotnet publish DotnetAgenticStarterkit.csproj -t:PublishContainer -c Release
+dotnet publish DigitalHouse.csproj -t:PublishContainer -c Release
 ```
 
 **Not a hand-maintained `Dockerfile`.** The .NET SDK's container publish
@@ -27,13 +27,13 @@ watch run` dev-server ports from `launchSettings.json`.
 
 ### The repository name self-derives — it isn't a literal string anywhere
 
-`DotnetAgenticStarterkit.csproj`:
+`DigitalHouse.csproj`:
 
 ```xml
 <ContainerRepository>$(MSBuildProjectName.ToLowerInvariant())</ContainerRepository>
 ```
 
-**Not** `<ContainerRepository>DotnetAgenticStarterkit</ContainerRepository>`, even
+**Not** `<ContainerRepository>DigitalHouse</ContainerRepository>`, even
 though that's what this repo would resolve to either way. The reason is
 this template's own rename flow: `scripts/new-project.sh` produces
 PascalCase project names (`Contoso.Portal`, the documented example) by
@@ -80,7 +80,7 @@ bash scripts/run-stack.sh --no-seed    # build + start only
 bash scripts/run-stack.sh --down       # stop everything
 ```
 
-`compose.yaml`'s `app` service uses `image: ${APP_IMAGE:-DotnetAgenticStarterkit}:latest`
+`compose.yaml`'s `app` service uses `image: ${APP_IMAGE:-DigitalHouse}:latest`
 — the image P5.1 builds — **not** a Dockerfile `build:` section, so `docker
 compose up` alone can't build it from source (Compose's own build mechanism
 expects a Dockerfile, and P5.1 deliberately doesn't have one).
@@ -92,7 +92,7 @@ container publish, then `docker compose up -d` (which picks up `$APP_IMAGE`
 from the environment), then seeds (`docker compose run --rm app seed` — the
 same `dotnet run -- seed` verb dispatch, reached by appending `seed` to the
 image's exec-form `ENTRYPOINT ["dotnet", "/app/<name>.dll"]`; idempotent,
-safe to rerun). The `:DotnetAgenticStarterkit` fallback in `${APP_IMAGE:-DotnetAgenticStarterkit}`
+safe to rerun). The `:DigitalHouse` fallback in `${APP_IMAGE:-DigitalHouse}`
 only covers a bare `docker compose up` run against this *unrenamed* template
 — always use `run-stack.sh`, which sets `$APP_IMAGE` correctly regardless of
 what the project's been renamed to.
@@ -112,7 +112,7 @@ what the project's been renamed to.
 ### Data Protection keys persist in Postgres, not in memory
 
 `AppDbContext` implements `IDataProtectionKeyContext`;
-`AddDataProtection().SetApplicationName("DotnetAgenticStarterkit").PersistKeysToDbContext<AppDbContext>()`
+`AddDataProtection().SetApplicationName("DigitalHouse").PersistKeysToDbContext<AppDbContext>()`
 (`Program.cs`) stores the key ring in a new `DataProtectionKeys` table
 instead of the in-memory default, which silently regenerates a fresh key
 ring on every restart — invalidating every issued auth cookie and
@@ -122,7 +122,7 @@ pattern as everything else in this app (Hangfire, caching): Postgres, not a
 new store.
 
 `SetApplicationName` matters specifically because `dotnet watch run` (host,
-content root `C:\...\DotnetAgenticStarterkit`) and the container (content root `/app`)
+content root `C:\...\DigitalHouse`) and the container (content root `/app`)
 have different `ContentRootPath`s, which Data Protection otherwise folds
 into the key ring's identity — without a fixed name, keys written by one
 environment wouldn't be recognized as belonging to "this app" by the other,
@@ -180,7 +180,7 @@ issues) is in [`docs/live-deployment-runbook.md`](live-deployment-runbook.md).
 This section is the generic walkthrough for what a **new** project spun
 from this template does for **its own** app.
 
-> **`fly.toml`'s `app` is `"dotnetagenticstarterkit"`** — a placeholder,
+> **`fly.toml`'s `app` is `"digitalhouse"`** — a placeholder,
 > the lowercased project identifier (same form as `compose.yaml`'s
 > `${APP_IMAGE:-…}` fallback). `scripts/new-project.sh` rewrites it to
 > `lower("<NewName>")` on rename. Fly app names must also be globally
@@ -215,7 +215,7 @@ fly.toml                       # Fly app config
   always gets `--image ghcr.io/<owner-repo, lowercased>:<sha>` explicitly. A
   bare `fly deploy` run by hand without `--image` would otherwise look for
   a Dockerfile, which this repo deliberately doesn't have. Its `app` line
-  ships as `"dotnetagenticstarterkit"` — a placeholder, the lowercased
+  ships as `"digitalhouse"` — a placeholder, the lowercased
   project identifier, the same value `compose.yaml`'s `${APP_IMAGE:-…}`
   fallback uses. `scripts/new-project.sh` rewrites it to `lower("<NewName>")`
   along with every other lowercased occurrence. Fly app names must also be
@@ -280,9 +280,9 @@ happen on the next push, not something to fake here.
 
 ## Verified end-to-end (2026-09-03)
 
-**P5.1**, standalone, connected to the existing `DotnetAgenticStarterkit_default`
+**P5.1**, standalone, connected to the existing `DigitalHouse_default`
 compose network: `dotnet publish -t:PublishContainer` → image builds
-(`docker images DotnetAgenticStarterkit` confirms it, 381MB) → `docker run` with
+(`docker images DigitalHouse` confirms it, 381MB) → `docker run` with
 `ConnectionStrings__Default` pointing at the `db` service → home page and
 `/listings` both `200`, `/api/listings` returns real seeded data through
 the container network — genuine Postgres connectivity proven, not just "the
@@ -331,18 +331,18 @@ template, since it's not a literal string the rename touches);
 (`contoso.portal`), matching `compose.yaml`; `deploy.yml`'s
 repository-computation step survived intact. `bash scripts/run-stack.sh --no-seed` on the renamed clone
 → `docker compose ps` shows `contoso.portal:latest` running (not
-`DotnetAgenticStarterkit` or an invalid reference), `/alive` → `200`.
+`DigitalHouse` or an invalid reference), `/alive` → `200`.
 
 ## Verified end-to-end (2026-09-04) — the live deploy itself
 
 **P5.3 has now actually deployed live**, not just "written and ready":
-`carlnaddy-DotnetAgenticStarterkit` created, `carlnaddy-DotnetAgenticStarterkit-db` (single-node
+`carlnaddy-DigitalHouse` created, `carlnaddy-DigitalHouse-db` (single-node
 Fly Postgres, `ams`) created and attached, `[deploy] release_command =
 "seed"` added to `fly.toml` so migrations + the idempotent seed run before
 every release, and a manual first deploy (`flyctl deploy --image
-registry.fly.io/carlnaddy-DotnetAgenticStarterkit:bootstrap`) served real traffic —
+registry.fly.io/carlnaddy-DigitalHouse:bootstrap`) served real traffic —
 `/`, `/health`, `/alive` all `200` at
-<https://carlnaddy-DotnetAgenticStarterkit.fly.dev/>. Full operational detail (where
+<https://carlnaddy-DigitalHouse.fly.dev/>. Full operational detail (where
 every credential actually lives, cost, cheat sheet): `docs/live-deployment-runbook.md`.
 
 Two real gotchas, found only by actually deploying, not by reviewing the

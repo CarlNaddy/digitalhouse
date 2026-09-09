@@ -78,11 +78,11 @@ you're accidentally in the template repo itself, not a project made from it
 (bypass with `I_UNDERSTAND_THIS_IS_THE_TEMPLATE=1`, template-maintenance
 only). The script:
 
-- replaces the `DotnetAgenticStarterkit` identifier in every tracked text file
+- replaces the `DigitalHouse` identifier in every tracked text file
   (namespaces, usings, `_Imports.razor`, `.slnx`, launch profiles, …);
-- renames `DotnetAgenticStarterkit.csproj` → `Contoso.Portal.csproj`,
-  `DotnetAgenticStarterkit.slnx` → `Contoso.Portal.slnx`, and
-  `tests/DotnetAgenticStarterkit.Tests/` → `tests/Contoso.Portal.Tests/`;
+- renames `DigitalHouse.csproj` → `Contoso.Portal.csproj`,
+  `DigitalHouse.slnx` → `Contoso.Portal.slnx`, and
+  `tests/DigitalHouse.Tests/` → `tests/Contoso.Portal.Tests/`;
 - regenerates `<UserSecretsId>`;
 - resets `README.md` to a short project stub;
 - deletes this repo's history docs (`rails-parity-plan.md`, `setup-log.md`);

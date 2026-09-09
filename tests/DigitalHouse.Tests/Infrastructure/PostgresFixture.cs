@@ -1,8 +1,8 @@
-using DotnetAgenticStarterkit.Data;
+using DigitalHouse.Data;
 using Microsoft.EntityFrameworkCore;
 using Testcontainers.PostgreSql;
 
-namespace DotnetAgenticStarterkit.Tests.Infrastructure;
+namespace DigitalHouse.Tests.Infrastructure;
 
 /// <summary>
 /// Spins up a real PostgreSQL server in a throwaway Docker container for the

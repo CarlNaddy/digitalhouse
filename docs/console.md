@@ -74,7 +74,7 @@ dotnet run -- console
 ```
 
 Output goes straight to the terminal (`System.Console.WriteLine` — fully
-qualified, since the file's own namespace is `DotnetAgenticStarterkit.Features.Console`)
+qualified, since the file's own namespace is `DigitalHouse.Features.Console`)
 alongside the app's normal startup/EF Core logging.
 
 Anything from DI is fair game — `IDbContextFactory<AppDbContext>`,
@@ -104,7 +104,7 @@ reviewed code. If a snippet turns out to be worth keeping:
 
 `Scratch.cs` runs against whatever database your connection string points
 at — normally your own local dev Postgres, with real (if messy) data.
-Deterministic, repeatable assertions belong in `tests/DotnetAgenticStarterkit.Tests/`
+Deterministic, repeatable assertions belong in `tests/DigitalHouse.Tests/`
 against the P2.3 `DatabaseTest`/`PostgresFixture` tier (a throwaway
 Testcontainers Postgres, reset between tests) — not here.
 

@@ -1,7 +1,7 @@
-using DotnetAgenticStarterkit.Data;
+using DigitalHouse.Data;
 using Microsoft.EntityFrameworkCore;
 
-namespace DotnetAgenticStarterkit.Features.Jobs;
+namespace DigitalHouse.Features.Jobs;
 
 /// <summary>
 /// Background jobs for the <see cref="Listing"/> feature (parity plan P4.1) —
