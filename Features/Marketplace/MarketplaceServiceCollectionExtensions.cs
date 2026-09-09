@@ -62,6 +62,8 @@ public static class MarketplaceServiceCollectionExtensions
         services.AddScoped<ProductView>();
         services.AddScoped<IProductView>(sp => sp.GetRequiredService<ProductView>());
         services.AddScoped<IMarketplaceActions, MarketplaceActions>();
+        services.AddScoped<IWalletView, WalletView>();
+        services.AddScoped<IMyAssetsView, MyAssetsView>();
 
         // Recurring Hangfire jobs — plain scoped classes, scheduled by
         // MarketplaceRecurringJobs on host startup.

@@ -1,0 +1,117 @@
+@page "/marketplace/assets"
+@attribute [Authorize]
+@using System.Security.Claims
+@using DigitalHouse.Data
+@using DigitalHouse.Features.Marketplace
+@inject IMyAssetsView MyAssetsView
+@inject IMarketplaceActions Actions
+@inject ISnackbar Snackbar
+
+<PageTitle>My assets</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">My assets</MudText>
+
+@if (_rows is null)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (_rows.Count == 0)
+{
+    <MudText Class="pa-4">You don't own any collectibles yet.
+        <MudLink Href="/marketplace">Browse the marketplace.</MudLink>
+    </MudText>
+}
+else
+{
+    <MudDataGrid T="OwnedAssetRow" Items="_rows" Dense="true" Hover="true">
+        <Columns>
+            <TemplateColumn Title="Asset">
+                <CellTemplate>
+                    <MudLink Href="@($"/marketplace/{context.Item.Slug}")">@context.Item.Title</MudLink>
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary d-block"
+                             Style="font-family:var(--mud-typography-monospace-family, monospace)">
+                        @context.Item.CertificateId
+                    </MudText>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Buy price">
+                <CellTemplate>@MarketplaceFormat.Usd(context.Item.BuyPriceCents)</CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Current">
+                <CellTemplate>@MarketplaceFormat.Usd(context.Item.CurrentPriceCents)</CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Gain">
+                <CellTemplate>
+                    <span class="@(context.Item.UnrealisedGainCents >= 0 ? "mud-success-text" : "mud-error-text")">
+                        @MarketplaceFormat.SignedUsd(context.Item.UnrealisedGainCents)
+                    </span>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Growth (1y)">
+                <CellTemplate>@MarketplaceFormat.SignedUsd(context.Item.GrowthLast12MonthsCents)</CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="" Sortable="false">
+                <CellTemplate>
+                    <div class="d-flex gap-2 align-center">
+                        @if (context.Item.IsListedForResale)
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Secondary">listed</MudChip>
+                        }
+                        @if (context.Item.CanSellBack)
+                        {
+                            <MudButton Size="Size.Small" Variant="Variant.Outlined"
+                                       OnClick="@(() => SellBackAsync(context.Item))">Sell back</MudButton>
+                        }
+                    </div>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <PagerContent>
+            <MudDataGridPager T="OwnedAssetRow" />
+        </PagerContent>
+    </MudDataGrid>
+}
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthState { get; set; }
+
+    private IReadOnlyList<OwnedAssetRow>? _rows;
+    private ApplicationUser? _viewer;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        if (AuthState is null)
+        {
+            return;
+        }
+
+        var user = (await AuthState).User;
+        var id = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (id is null)
+        {
+            return;
+        }
+
+        _viewer = new ApplicationUser { Id = id, Email = user.FindFirstValue(ClaimTypes.Email) };
+        _rows = await MyAssetsView.ForUserAsync(_viewer);
+    }
+
+    private async Task SellBackAsync(OwnedAssetRow row)
+    {
+        try
+        {
+            await Actions.SellBackAsync(_viewer!, row.Product, default);
+            Snackbar.Add($"Sold {row.Title} back to the marketplace.", Severity.Success);
+        }
+        catch (MarketplaceException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Warning);
+        }
+
+        await LoadAsync();
+        StateHasChanged();
+    }
+}

@@ -4,6 +4,7 @@ using Bunit.TestDoubles;
 using DigitalHouse.Components.Pages.Marketplace;
 using DigitalHouse.Data;
 using DigitalHouse.Features.Marketplace;
+using DigitalHouse.Tests.Fakes;
 using DigitalHouse.Tests.Infrastructure;
 using DigitalHouse.Tests.TestData;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,7 +22,7 @@ public sealed class ProductDetailPageTests : MudBlazorTestContext
     private static readonly DateTimeOffset _now = new(2026, 9, 1, 12, 0, 0, TimeSpan.Zero);
 
     private readonly StubProductView _view = new();
-    private readonly StubActions _actions = new();
+    private readonly StubMarketplaceActions _actions = new();
     private readonly Product _product = new ProductBuilder()
         .WithSlug("aureate-relic").WithTitle("Aureate Relic")
         .WithCreatedAt(_now.AddYears(-3)).WithCurrentPriceMicros(7_500_000).Build();
@@ -115,17 +116,5 @@ public sealed class ProductDetailPageTests : MudBlazorTestContext
 
         public Task<ProductViewModel?> BySlugAsync(string slug, ApplicationUser? viewer, CancellationToken ct = default)
             => Task.FromResult(Model);
-    }
-
-    private sealed class StubActions : IMarketplaceActions
-    {
-        public Task<Reservation> ReserveAsync(ApplicationUser buyer, Product product, long? resaleListingId, CancellationToken ct = default)
-            => Task.FromResult(new Reservation { ProductId = product.Id, UserId = buyer.Id });
-
-        public Task ListForResaleAsync(ApplicationUser owner, Product product, CancellationToken ct = default) => Task.CompletedTask;
-
-        public Task DelistAsync(ApplicationUser owner, Product product, CancellationToken ct = default) => Task.CompletedTask;
-
-        public Task SellBackAsync(ApplicationUser owner, Product product, CancellationToken ct = default) => Task.CompletedTask;
     }
 }

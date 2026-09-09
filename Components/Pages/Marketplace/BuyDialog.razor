@@ -3,10 +3,11 @@
 @using DigitalHouse.Features.Payments
 @using Microsoft.Extensions.Options
 @inject IPaymentGateway PaymentGateway
-@inject PurchaseService Purchases
+@inject IMarketplaceActions Actions
 @inject IOptions<StripeOptions> Stripe
 @inject IJSRuntime JS
 @inject ISnackbar Snackbar
+@implements IDisposable
 
 <MudDialog>
     <DialogContent>
@@ -58,9 +59,15 @@
 
     private async Task RunCountdownAsync()
     {
+        var timer = _timer;
+        if (timer is null)
+        {
+            return;
+        }
+
         try
         {
-            while (_timer is not null && await _timer.WaitForNextTickAsync())
+            while (await timer.WaitForNextTickAsync())
             {
                 Tick();
                 await InvokeAsync(StateHasChanged);
@@ -72,7 +79,11 @@
         }
         catch (OperationCanceledException)
         {
-            // dialog closed
+            // timer disposed / dialog closed
+        }
+        catch (ObjectDisposedException)
+        {
+            // timer disposed
         }
     }
 
@@ -104,8 +115,9 @@
                 return;
             }
 
-            await Purchases.CompleteAsync(Reservation, new PaymentConfirmation(intent.PaymentIntentId), default);
+            await Actions.CompletePurchaseAsync(Reservation, new PaymentConfirmation(intent.PaymentIntentId), default);
             Snackbar.Add($"You now own {Product.Title}.", Severity.Success);
+            StopTimer();
             MudDialog.Close(DialogResult.Ok(true));
         }
         catch (MarketplaceException ex)
@@ -132,8 +144,15 @@
 
     private void Cancel()
     {
-        _timer?.Dispose();
-        _timer = null;
+        StopTimer();
         MudDialog.Cancel();
     }
+
+    private void StopTimer()
+    {
+        _timer?.Dispose();
+        _timer = null;
+    }
+
+    public void Dispose() => StopTimer();
 }

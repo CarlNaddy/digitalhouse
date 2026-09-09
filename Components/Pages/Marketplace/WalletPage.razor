@@ -1,0 +1,78 @@
+@page "/marketplace/wallet"
+@attribute [Authorize]
+@using DigitalHouse.Data
+@using DigitalHouse.Features.Marketplace
+@inject IWalletView WalletView
+
+<PageTitle>Store credit</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Store credit</MudText>
+
+@if (_model is null)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else
+{
+    <MudPaper Class="pa-4 mb-4" Elevation="1">
+        <MudText Typo="Typo.overline" Class="mud-text-secondary">Balance</MudText>
+        <MudText Typo="Typo.h3">@MarketplaceFormat.Usd(_model.BalanceCents)</MudText>
+        <MudText Typo="Typo.body2" Class="mud-text-secondary mt-1">
+            Accrued from selling assets. Cash-out is coming later — this balance can't be spent at checkout or
+            withdrawn yet.
+        </MudText>
+        @if (!_model.Cashable)
+        {
+            <MudAlert Severity="Severity.Warning" Dense="true" Class="mt-3">
+                This balance is negative (a reversed sale). It is not cashable until it returns to zero or above.
+            </MudAlert>
+        }
+    </MudPaper>
+
+    <MudText Typo="Typo.subtitle1" Class="mb-2">Ledger</MudText>
+    <MudDataGrid T="LedgerRow" Items="_model.Ledger" Dense="true" Hover="true" Bordered="false">
+        <Columns>
+            <PropertyColumn Property="x => x.At" Title="When" Format="yyyy-MM-dd HH:mm" />
+            <PropertyColumn Property="x => x.Type" Title="Type" />
+            <TemplateColumn Title="Amount">
+                <CellTemplate>
+                    <span class="@(context.Item.AmountCents >= 0 ? "mud-success-text" : "mud-error-text")">
+                        @MarketplaceFormat.SignedUsd(context.Item.AmountCents)
+                    </span>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Balance after">
+                <CellTemplate>@MarketplaceFormat.Usd(context.Item.BalanceAfterCents)</CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Reference">
+                <CellTemplate>
+                    @(context.Item.ReferenceKind == WalletReferenceKind.None
+                        ? "—"
+                        : $"{context.Item.ReferenceKind} #{context.Item.ReferenceId}")
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <NoRecordsContent>
+            <MudText Class="pa-4">No ledger entries yet. Sell an asset to earn store credit.</MudText>
+        </NoRecordsContent>
+        <PagerContent>
+            <MudDataGridPager T="LedgerRow" />
+        </PagerContent>
+    </MudDataGrid>
+}
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthState { get; set; }
+
+    private WalletPageModel? _model;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var userId = await AuthState.UserIdAsync();
+        if (userId is not null)
+        {
+            _model = await WalletView.ForUserAsync(userId);
+        }
+    }
+}

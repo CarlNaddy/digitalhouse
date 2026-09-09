@@ -1,0 +1,27 @@
+### Marketplace — the digital-asset marketplace (openspec:
+### add-digital-asset-marketplace). The catalog and product pages are Blazor
+### (Components/Pages/Marketplace/), not a JSON API — browse them at
+### {{baseUrl}}/marketplace. The only HTTP endpoint the feature adds is the
+### Stripe webhook.
+
+@baseUrl = https://localhost:7105
+
+### Stripe webhook — Endpoints/StripeWebhookEndpoints.cs
+### POST /api/stripe/webhook. Unauthenticated and antiforgery-disabled: the
+### Stripe-Signature header IS the authentication. A body without a valid
+### signature (like this one) is rejected 400 and changes nothing.
+POST {{baseUrl}}/api/stripe/webhook
+Content-Type: application/json
+
+{ "id": "evt_test", "type": "payment_intent.succeeded", "data": { "object": { "id": "pi_test" } } }
+
+### A real event needs the signature Stripe computes over "{timestamp}.{body}"
+### with the endpoint's signing secret. Locally, forward real events with the
+### Stripe CLI (it prints the whsec_… to put in Stripe:WebhookSecret):
+###
+###   stripe listen --forward-to https://localhost:7105/api/stripe/webhook
+###   stripe trigger payment_intent.succeeded
+###
+### The handler is idempotent per Stripe event id (ProcessedWebhookEvents) and
+### per payment-intent id (StripePayments), and only advances a purchase from
+### Pending → Paid.

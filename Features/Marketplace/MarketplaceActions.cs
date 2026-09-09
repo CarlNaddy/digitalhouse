@@ -11,6 +11,8 @@ public interface IMarketplaceActions
 {
     Task<Reservation> ReserveAsync(ApplicationUser buyer, Product product, long? resaleListingId, CancellationToken ct = default);
 
+    Task CompletePurchaseAsync(Reservation reservation, PaymentConfirmation confirmation, CancellationToken ct = default);
+
     Task ListForResaleAsync(ApplicationUser owner, Product product, CancellationToken ct = default);
 
     Task DelistAsync(ApplicationUser owner, Product product, CancellationToken ct = default);
@@ -21,9 +23,15 @@ public interface IMarketplaceActions
 /// <inheritdoc />
 public sealed class MarketplaceActions(
     ReservationService reservationService,
+    PurchaseService purchaseService,
     ResaleService resaleService,
     BuybackService buybackService) : IMarketplaceActions
 {
+    public Task CompletePurchaseAsync(
+        Reservation reservation, PaymentConfirmation confirmation, CancellationToken ct = default)
+        => purchaseService.CompleteAsync(reservation, confirmation, ct);
+
+
     public Task<Reservation> ReserveAsync(
         ApplicationUser buyer, Product product, long? resaleListingId, CancellationToken ct = default)
     {
