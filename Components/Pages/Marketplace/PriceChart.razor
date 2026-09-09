@@ -1,0 +1,124 @@
+@using System.Globalization
+
+@if (_points.Count < 2)
+{
+    <MudText Typo="Typo.body2" Class="mud-text-secondary pa-4">Not enough history to chart yet.</MudText>
+}
+else
+{
+    <div class="price-chart" style="overflow-x:auto" @onpointerleave="ClearHover">
+        <div style="position:relative;width:@(Width)px">
+            <svg width="@Width" height="@Height" viewBox="0 0 @Width @Height" role="img" aria-label="@AriaLabel"
+                 style="display:block">
+
+                @for (var g = 0; g <= GridLines; g++)
+                {
+                    var y = TopPad + ((Height - TopPad - BottomPad) * g / GridLines);
+                    <line x1="0" y1="@F(y)" x2="@Width" y2="@F(y)" class="price-chart-grid" />
+                }
+
+                <polygon points="@AreaPoints" class="price-chart-area" />
+                <polyline points="@LinePoints" class="price-chart-line" />
+                <circle cx="@F(X(_points.Count - 1))" cy="@F(Y(_points[^1].PriceUsd))" r="3" class="price-chart-end" />
+
+                @if (_hoverIndex is { } h)
+                {
+                    <line x1="@F(X(h))" y1="@TopPad" x2="@F(X(h))" y2="@F(Height - BottomPad)" class="price-chart-guide" />
+                    <circle cx="@F(X(h))" cy="@F(Y(_points[h].PriceUsd))" r="4" class="price-chart-marker" />
+                }
+
+                <rect x="0" y="0" width="@Width" height="@Height" fill="transparent"
+                      @onpointermove="OnPointerMove" />
+            </svg>
+
+            @if (_hoverIndex is { } hi)
+            {
+                <div class="price-chart-readout" style="@ReadoutStyle(hi)">
+                    <span>@_points[hi].At.ToLocalTime().ToString(HoverDateFormat, CultureInfo.InvariantCulture)</span>
+                    <strong>@_points[hi].PriceUsd.ToString("C2", _usd)</strong>
+                </div>
+            }
+        </div>
+
+        <div class="d-flex justify-space-between mud-text-secondary mt-1" style="font-size:0.75rem">
+            <span>@_points[0].At.ToLocalTime().ToString(AxisDateFormat, CultureInfo.InvariantCulture)
+                &nbsp;·&nbsp;@_points[0].PriceUsd.ToString("C2", _usd) → @_points[^1].PriceUsd.ToString("C2", _usd)</span>
+            <span>now</span>
+        </div>
+    </div>
+}
+
+@code {
+    private const int Width = 640;
+    private const int Height = 220;
+    private const int TopPad = 12;
+    private const int BottomPad = 12;
+    private const int GridLines = 4;
+
+    private static readonly CultureInfo _usd = CultureInfo.GetCultureInfo("en-US");
+
+    [Parameter, EditorRequired]
+    public IReadOnlyList<PriceChartPoint> Points { get; set; } = [];
+
+    /// <summary>Left-edge axis label format — set per selected range.</summary>
+    [Parameter] public string AxisDateFormat { get; set; } = "MMM d";
+
+    [Parameter] public string HoverDateFormat { get; set; } = "MMM d, HH:mm";
+
+    private IReadOnlyList<PriceChartPoint> _points = [];
+    private int? _hoverIndex;
+    private decimal _min;
+    private decimal _max;
+
+    protected override void OnParametersSet()
+    {
+        _points = Points;
+        _hoverIndex = null;
+        if (_points.Count >= 2)
+        {
+            _min = _points.Min(p => p.PriceUsd);
+            _max = _points.Max(p => p.PriceUsd);
+            if (_max == _min)
+            {
+                _max = _min + 1m;
+            }
+        }
+    }
+
+    private string AriaLabel =>
+        $"Price history from {_points[0].PriceUsd.ToString("C2", _usd)} to {_points[^1].PriceUsd.ToString("C2", _usd)}.";
+
+    private double X(int i) => (double)i / (_points.Count - 1) * Width;
+
+    private double Y(decimal price)
+    {
+        var frac = (double)(price - _min) / (double)(_max - _min);
+        return Height - BottomPad - (frac * (Height - TopPad - BottomPad));
+    }
+
+    private string LinePoints =>
+        string.Join(" ", _points.Select((p, i) => $"{F(X(i))},{F(Y(p.PriceUsd))}"));
+
+    private string AreaPoints =>
+        $"{F(X(0))},{F(Height - BottomPad)} {LinePoints} {F(X(_points.Count - 1))},{F(Height - BottomPad)}";
+
+    // The SVG has a fixed pixel width equal to its viewBox width, so OffsetX
+    // (CSS pixels, relative to the rect) maps straight to the sample index.
+    private void OnPointerMove(Microsoft.AspNetCore.Components.Web.PointerEventArgs e)
+    {
+        var frac = Math.Clamp(e.OffsetX / Width, 0, 1);
+        _hoverIndex = (int)Math.Round(frac * (_points.Count - 1));
+    }
+
+    private void ClearHover() => _hoverIndex = null;
+
+    private string ReadoutStyle(int i)
+    {
+        var pct = (double)i / (_points.Count - 1) * 100;
+        return pct > 75
+            ? $"right:{(100 - pct).ToString("0.#", CultureInfo.InvariantCulture)}%;"
+            : $"left:{pct.ToString("0.#", CultureInfo.InvariantCulture)}%;";
+    }
+
+    private static string F(double v) => v.ToString("0.##", CultureInfo.InvariantCulture);
+}

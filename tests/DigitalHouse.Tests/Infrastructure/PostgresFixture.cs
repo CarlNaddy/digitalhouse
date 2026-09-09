@@ -49,6 +49,21 @@ public sealed class PostgresFixture : IAsyncLifetime
     public async Task ResetAsync()
     {
         await using var db = CreateContext();
+
+        // Marketplace (openspec: add-digital-asset-marketplace) — children first;
+        // ExecuteDelete does not cascade.
+        await db.WalletTransactions.ExecuteDeleteAsync();
+        await db.Wallets.ExecuteDeleteAsync();
+        await db.ProcessedWebhookEvents.ExecuteDeleteAsync();
+        await db.StripePayments.ExecuteDeleteAsync();
+        await db.PricePoints.ExecuteDeleteAsync();
+        await db.Reservations.ExecuteDeleteAsync();
+        await db.ResaleListings.ExecuteDeleteAsync();
+        await db.Purchases.ExecuteDeleteAsync();
+        await db.AssetOwnerships.ExecuteDeleteAsync();
+        await db.ProductImages.ExecuteDeleteAsync();
+        await db.Products.ExecuteDeleteAsync();
+
         await db.Listings.ExecuteDeleteAsync();
         await db.JobRuns.ExecuteDeleteAsync();
         await db.StoredFiles.ExecuteDeleteAsync();
