@@ -25,41 +25,41 @@ The system SHALL restrict all product-administration screens and actions to user
 
 ### Requirement: Create a product
 
-An admin SHALL be able to create a product by supplying a title, a slug (defaulted from the title, editable, unique), an optional description, an "exists since" date, and a base price entered in USD (dollars and cents). The admin MAY override the pricing parameters: annual growth factor, noise amplitude, price floor, price ceiling, and buyback spread-cap. Unset overrides SHALL take system defaults: the annual factor is randomized within the configured range; noise amplitude is the configured default; floor, ceiling, and spread-cap remain unset. On creation the product's stored current price SHALL be initialised to its base price and the product SHALL have exactly one recorded price snapshot.
+An admin SHALL be able to create a product by supplying a title, a slug (defaulted from the title, editable, unique), an optional description, an **issued date** (mapping to the product's `CreatedAt`: defaulting to today, backdatable to 2000-01-01 or later, never in the future), and an optional buyback spread-cap override in USD. There SHALL be no base-price or growth-parameter field — the price is fully determined by the system-generated `PriceSeed` and the issued date. On creation the system SHALL generate a `PriceSeed`, initialise the stored current price to the curve's value at the issued date, run one scheduled recomputation, and leave exactly one recorded price snapshot.
 
 #### Scenario: Minimal create
 
-- **WHEN** an admin submits a valid title and base price with no overrides
-- **THEN** a product is created with a unique slug, an annual factor inside the configured range, the default noise amplitude, a current price equal to the base price, and one price-history snapshot
+- **WHEN** an admin submits a valid title with today's issued date and no spread-cap override
+- **THEN** a product is created with a unique slug, a non-zero `PriceSeed`, a current price at or near $1.00, and one price-history snapshot
 
-#### Scenario: Create with overrides
+#### Scenario: Backdated create
 
-- **WHEN** an admin submits a base price of $250.00 plus an explicit annual factor, price floor and ceiling
-- **THEN** the product stores `250_000_000` micro-USD of base price, the given factor, and the given floor/ceiling (all as integer `long`)
+- **WHEN** an admin submits an issued date of 2015-06-01
+- **THEN** the product's `CreatedAt` is 2015-06-01 and, after the initial recomputation, its current price reflects roughly a decade of drift — well above $1.00
 
 #### Scenario: Duplicate slug rejected
 
 - **WHEN** an admin submits a slug already used by another product
 - **THEN** the form is rejected with a validation error and no product is created
 
-#### Scenario: Invalid base price rejected
+#### Scenario: Future or pre-2000 issued date rejected
 
-- **WHEN** an admin submits a non-positive or non-numeric base price
+- **WHEN** an admin submits an issued date later than today, or earlier than 2000-01-01
 - **THEN** the form is rejected and no product is created
 
 ### Requirement: Edit a product
 
-An admin SHALL be able to edit an existing product's metadata (title, slug, description, exists-since) and its pricing parameters. Changing the base price SHALL be applied through the pricing engine's admin-adjust path so that it records an `Admin` price snapshot and recomputes the current price; it SHALL NOT be a raw write. Metadata changes SHALL NOT create price snapshots.
+An admin SHALL be able to edit an existing product's title, slug, description, and buyback spread-cap override. The issued date SHALL be shown read-only and SHALL NOT be editable (`CreatedAt` is immutable). There SHALL be no price field of any kind. No edit SHALL create a price snapshot or change the current price.
 
 #### Scenario: Metadata edit
 
-- **WHEN** an admin changes only the title and description
-- **THEN** the product reflects the new values and no new price snapshot is written
+- **WHEN** an admin changes the title and description
+- **THEN** the product reflects the new values, no price snapshot is written, and the current price is unchanged
 
-#### Scenario: Base price change is recorded
+#### Scenario: Issued date cannot be changed
 
-- **WHEN** an admin changes the base price from $100.00 to $150.00
-- **THEN** an `Admin` price snapshot is written, and the current price is recomputed from the new base
+- **WHEN** a request attempts to change a product's issued date on edit
+- **THEN** the change is rejected by the persistence layer and the product is unchanged
 
 #### Scenario: Slug stays unique on edit
 
@@ -73,7 +73,7 @@ An admin SHALL be able to upload one or more images to a product, mark exactly o
 #### Scenario: Upload adds gallery images
 
 - **WHEN** an admin uploads two valid images to a product with none
-- **THEN** two `ProductImage` rows exist for the product, their bytes are stored via the file store, and one is marked primary
+- **THEN** two `ProductImage` rows exist for the product, their bytes are stored through the `IFileStore` seam (with `StoredFile` metadata), and one is marked primary
 
 #### Scenario: Oversized or wrong-type upload rejected
 

@@ -1,12 +1,12 @@
 ## 1. Admin gating
 
 - [ ] 1.1 Register `.AddPolicy("ManageProducts", p => p.RequireRole("Admin"))` in `Program.cs`'s `AddAuthorizationBuilder()` chain, next to `ListingsAdmin`. Verify an xUnit test resolves `IAuthorizationService` and asserts an `Admin`-role principal succeeds and a plain authenticated principal fails for `"ManageProducts"`.
-- [ ] 1.2 Confirm `IdentitySeeder` already seeds the `Admin` role + dev admin user (it does — P3.6); add a `dotnet run -- console` note for granting the role to another user. Verify `dotnet run -- seed` leaves a user in the `Admin` role.
+- [ ] 1.2 Confirm `IdentitySeeder` already seeds the `Admin` role + dev admin user (P3.6); add a `dotnet run -- console` note for granting the role to another user. Verify `dotnet run -- seed` leaves a user in the `Admin` role.
 
 ## 2. Config
 
 - [ ] 2.1 Add `ImageMaxBytes` (5_242_880), `ImageMaxCount` (8), `AllowedImageContentTypes` (`["image/jpeg","image/png","image/webp"]`) to `MarketplaceOptions` + the `"Marketplace"` section of `appsettings.json`. Verify a test reads the bound values.
-- [ ] 2.2 Confirm image bytes are served by the existing `GET /api/files/{id}` and stored via `IFileStore`; tests use a real `LocalDiskFileStore` over a temp dir (as `LocalDiskFileStoreTests` does). No `storage:link`-style step exists or is needed.
+- [ ] 2.2 Confirm image bytes are served by the existing `GET /api/files/{id}` and stored via `IFileStore`; tests use a real `LocalDiskFileStore` over a temp dir. No `storage:link`-style step exists or is needed.
 
 ## 3. Product retirement
 
@@ -17,15 +17,15 @@
 - [ ] 3.5 Lock in that buyback is unaffected: `BuybackEligibility`/`BuybackService` allow a retired product within the spread cap. Verify a `DatabaseTest`: the owner of a retired product completes a buyback and is credited.
 - [ ] 3.6 `ProductAdminService.RetireAsync(Product)` sets `RetiredAt`, `UnretireAsync(Product)` clears it; neither touches ownership, reservations, listings, or `PricePoints`. Verify a `DatabaseTest` asserts history + ownership are untouched across retire/unretire.
 
-## 4. Product form + pricing helpers
+## 4. Product form
 
-- [ ] 4.1 `Features/Marketplace/PricingDefaults.RandomAnnualFactor(MarketplaceOptions): decimal` in the configured `[Min, Max]` range; refactor `ProductBuilder` to use it. Verify an xUnit test asserts the value is in range and the builder still produces valid products.
-- [ ] 4.2 `Features/Marketplace/ProductForm.cs` (POCO + `DataAnnotations` + `IValidatableObject`) per design §3 (dollar-denominated price fields, slug unique ignoring current id on edit, ceiling ≥ floor, factor within config range, `ExistsSince` not future). `ToEntityValues()` converts dollars → micros/cents with explicit `Math.Round` on `decimal`, `long` results, no `double`. Verify xUnit unit tests for the conversions and each validation rule.
+- [ ] 4.1 `Features/Marketplace/ProductForm.cs` (POCO + `DataAnnotations` + `IValidatableObject`) per design §3 — `Title`, `Slug` (unique ignoring current id on edit), `Description`, `IssuedDate` (`>= 2000-01-01 && <= today`, → `Product.CreatedAt`, read-only on edit), `BuybackSpreadCapDollars` (`>= 0`). A `ToEntityValues()` maps `IssuedDate` → `CreatedAt` and `BuybackSpreadCapDollars` → `BuybackSpreadCapCents` with explicit `Math.Round` on `decimal`, `long` result, no `double`. No base-price / factor / noise / floor / ceiling fields. Verify xUnit unit tests for the conversion and each validation rule (including future-date and pre-2000 rejection).
 
 ## 5. Create product
 
-- [ ] 5.1 `Components/Pages/Marketplace/Admin/ProductCreate.razor` (+ `.razor.cs`, `[Authorize(Policy="ManageProducts")]`): render the shared `ProductForm.razor` in an `EditForm`; on submit → `ProductAdminService.CreateAsync` which builds the `Product` (`PublicId`, random `PriceSeed` + `AnnualFactor` default, `CurrentPriceMicros = base`) under `AllowPriceWrites`, then `PricingEngine.RecomputeAsync`, then redirect to edit. Verify a bUnit test: a minimal create yields a product with an in-range factor, `CurrentPriceMicros == base` before recompute, exactly one `PricePoint` after.
-- [ ] 5.2 Create-with-overrides + duplicate-slug + invalid-base-price cases. Verify bUnit/`DatabaseTest`s: overrides persisted as micros/cents; duplicate slug and non-positive price rejected with no product created.
+- [ ] 5.1 `Components/Pages/Marketplace/Admin/ProductCreate.razor` (+ `.razor.cs`, `[Authorize(Policy="ManageProducts")]`): render the shared `ProductForm.razor` in an `EditForm`; on submit → `ProductAdminService.CreateAsync` which builds the `Product` (`PublicId`, `PriceSeed = Random.Shared.NextInt64(1, long.MaxValue)`, `CreatedAt` from the form, `CurrentPriceMicros = 1_000_000`) and saves under `db.AllowPriceWrites()`, then `PricingEngine.RecomputeAsync`, then redirect to edit. Verify a bUnit/`DatabaseTest`: a create with a 2015 issued date yields `CreatedAt` 2015, `CurrentPriceCents()` well above 100, and exactly one `PricePoint`; a create with no issued date defaults it to today.
+- [ ] 5.2 Duplicate-slug + future-issued-date + pre-2000-issued-date cases. Verify tests: each is rejected with no product created.
+- [ ] 5.3 Add `ProductAdminService.CreateAsync` to the `PricingEngine` guard arch-test allowlist (it sets `PriceSeed`/`CreatedAt`/`CurrentPriceMicros` on the new entity). Verify the arch test still passes.
 
 ## 6. Image gallery management
 
@@ -35,11 +35,11 @@
 
 ## 7. Edit product
 
-- [ ] 7.1 `Components/Pages/Marketplace/Admin/ProductEdit.razor` (`@page ".../{Slug}/edit"`, `[Authorize(Policy="ManageProducts")]`): hydrate `ProductForm` from the product; metadata/param save is a plain tracked update; a changed base price is routed through `PricingEngine.AdminAdjustAsync`. Verify bUnit/`DatabaseTest`s: a metadata-only edit writes no `PricePoint`; a base-price change writes an `Admin` `PricePoint` and recomputes; a slug collision on edit is rejected.
+- [ ] 7.1 `Components/Pages/Marketplace/Admin/ProductEdit.razor` (`@page ".../{Slug}/edit"`, `[Authorize(Policy="ManageProducts")]`): hydrate `ProductForm` from the product with `IssuedDate` read-only; save is a plain tracked update of title/slug/description/spread-cap via `ProductAdminService.UpdateAsync` — no price branch. Verify bUnit/`DatabaseTest`s: a metadata edit writes no `PricePoint` and does not change `CurrentPriceMicros`; a tampered POST changing `CreatedAt` is rejected by the `AppDbContext` guard; a slug collision on edit is rejected.
 
 ## 8. Admin index + retire toggle
 
-- [ ] 8.1 `Components/Pages/Marketplace/Admin/ProductIndex.razor` (`MudDataGrid`): list all products (retired included) with title, current price, owner/marketplace, retired badge, links to edit; a retire/unretire toggle calling `ProductAdminService`. Verify a bUnit test: the list includes a retired product with its badge; toggling retire/unretire flips `RetiredAt`.
+- [ ] 8.1 `Components/Pages/Marketplace/Admin/ProductIndex.razor` (`MudDataGrid`): list all products (retired included) with title, current price, owner/marketplace, retired badge, links to edit; a retire/unretire toggle calling `ProductAdminService`. Verify a bUnit test: the list includes a retired product with its badge; toggling flips `RetiredAt`.
 
 ## 9. Routes & navigation
 
@@ -48,6 +48,6 @@
 
 ## 10. Verification
 
-- [ ] 10.1 End-to-end xUnit `DatabaseTest`: an admin creates a product with 2 images → it appears in the public catalog with a primary thumbnail → the admin edits the base price (asserts an `Admin` snapshot) → the admin retires it → it vanishes from the catalog and a buyer cannot reserve it → an owning user (seed one) can still buy it back → the admin unretires → it is back in the catalog.
+- [ ] 10.1 End-to-end xUnit `DatabaseTest`: an admin creates a product with 2 images and a 2018 issued date → it appears in the public catalog with a primary thumbnail and a price well above $1 → the admin retires it → it vanishes from the catalog and a buyer cannot reserve it → an owning user (seed one) can still buy it back → the admin unretires → it is back in the catalog.
 - [ ] 10.2 Run `dotnet format DigitalHouse.slnx --verify-no-changes` and `dotnet test`; verify green.
 - [ ] 10.3 Run `openspec validate add-product-administration --strict`; confirm it passes.

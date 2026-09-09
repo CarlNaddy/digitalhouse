@@ -6,17 +6,17 @@ Gives every product a permanent, unique certificate identifier that serves as pr
 
 ### Requirement: Every product has a unique certificate identifier
 
-Each product SHALL have a `PublicId` that is a ULID (26 Crockford base-32 characters), unique across all products, and never null. It SHALL be assigned when the product is created — by the admin create flow, the test-data builder, and the seeder — and SHALL be present on every existing product after this change is applied.
+Each product SHALL have a `PublicId` that is a ULID (26 Crockford base-32 characters), unique across all products, and never null. It SHALL be assigned when the product is created — by the admin create flow, the test-data builder, and the seeder. The `Products` table SHALL define `PublicId` as `NOT NULL` and unique from its first migration (the marketplace is a greenfield feature, so no backfill of pre-existing rows is required).
 
 #### Scenario: New product gets a certificate id
 
 - **WHEN** a product is created through any path
 - **THEN** it has a 26-character ULID `PublicId` that no other product shares
 
-#### Scenario: Existing products are backfilled
+#### Scenario: Column constraints exist from the start
 
-- **WHEN** this change's migration runs against a database that already has products
-- **THEN** every existing product ends up with a unique `PublicId`, and the values sort in the same order as the products' creation timestamps
+- **WHEN** the marketplace migration is applied
+- **THEN** the `Products.PublicId` column is `NOT NULL` with a unique index, with no separate backfill step
 
 ### Requirement: The certificate identifier is immutable
 

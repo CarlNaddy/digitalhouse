@@ -77,7 +77,7 @@ The system SHALL let users narrow the catalog by a price range — a minimum and
 
 ### Requirement: Product detail view
 
-The system SHALL provide a product detail view showing the full image gallery, title, description, current price, price-history chart, "exists since" date, trailing 12-month growth ("Growth last year"), current owner or "held by marketplace", reservation state, and the single action available to the viewer (buy, list for resale, delist, sell back to marketplace, or none). The detail view SHALL NOT offer any download.
+The system SHALL provide a product detail view showing the full image gallery, title, description, current price, price-history chart, "exists since" date (the product's `CreatedAt`), trailing 12-month growth ("Growth last year"), current owner or "held by marketplace", reservation state, and the single action available to the viewer (buy, list for resale, delist, sell back to marketplace, or none). The detail view SHALL NOT offer any download.
 
 #### Scenario: Detail view reflects viewer capability
 

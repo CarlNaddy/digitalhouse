@@ -6,7 +6,7 @@ Defines what it means to own a digital product: the single-instance rule, how ow
 
 ### Requirement: What a product is
 
-A product SHALL consist of one or more images (a gallery) and metadata: the current owner (or "held by marketplace"), an "exists since" date, the current price, and the trailing 12-month growth amount. The system SHALL NOT provide any file download or exportable artifact. Ownership is solely a transferable record.
+A product SHALL consist of one or more images (a gallery) and metadata: the current owner (or "held by marketplace"), an "exists since" date (the product's `CreatedAt`), the current price, and the trailing 12-month growth amount. The system SHALL NOT provide any file download or exportable artifact. Ownership is solely a transferable record.
 
 #### Scenario: Product presents as a gallery with metadata
 
