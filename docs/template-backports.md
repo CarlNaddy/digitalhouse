@@ -18,6 +18,18 @@ anything non-mechanical about applying it to the template.
 
 ## Pending
 
+### `56f9f4c` — gitignore the OpenSpec archive lock file
+
+- **Commit:** `56f9f4c` (2026-09-10)
+- **Problem:** `openspec archive` leaves a transient
+  `openspec/changes/archive/.openspec-archive.lock` (`{"pid":…,"nonce":…}`)
+  behind after it exits. A later `git add -A` sweeps it into a commit.
+- **Files:**
+  - `openspec/.gitignore` (new) — one line:
+    `changes/archive/.openspec-archive.lock`.
+- **Template notes:** ports as-is (path is repo-relative, no identifier in it).
+  Skip if the template's pinned `openspec` CLI no longer leaks the lock.
+
 ### `9b82c47` — preflight starts the smtp4dev mail sink
 
 - **Commit:** `9b82c47` (2026-09-10)
