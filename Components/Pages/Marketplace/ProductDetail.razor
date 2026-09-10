@@ -40,20 +40,22 @@ else
         <MudItem xs="12" md="5">
             @if (_vm.ImageFileIds.Count > 0)
             {
-                <MudCarousel Class="rounded" Style="height:320px" ShowArrows="@(_vm.ImageFileIds.Count > 1)"
+                <MudCarousel Class="rounded" Style="width:100%;aspect-ratio:1 / 1"
+                             ShowArrows="@(_vm.ImageFileIds.Count > 1)"
                              ShowBullets="@(_vm.ImageFileIds.Count > 1)" AutoCycle="false" TData="Guid">
                     @foreach (var fileId in _vm.ImageFileIds)
                     {
                         <MudCarouselItem>
                             <MudImage Src="@($"/api/files/{fileId}")" Alt="@_vm.Product.Title"
-                                      ObjectFit="ObjectFit.Cover" Class="mud-width-full" Style="height:320px" />
+                                      ObjectFit="ObjectFit.Cover" Class="mud-width-full" Style="height:100%" />
                         </MudCarouselItem>
                     }
                 </MudCarousel>
             }
             else
             {
-                <MudPaper Class="d-flex align-center justify-center" Style="height:320px" Outlined="true">
+                <MudPaper Class="d-flex align-center justify-center"
+                          Style="width:100%;aspect-ratio:1 / 1" Outlined="true">
                     <MudIcon Icon="@Icons.Material.Filled.Image" Size="Size.Large" Class="mud-text-secondary" />
                 </MudPaper>
             }
