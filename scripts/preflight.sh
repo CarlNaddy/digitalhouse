@@ -40,6 +40,15 @@ fi
 if command -v docker >/dev/null 2>&1; then
     if docker info >/dev/null 2>&1; then
         ok "docker $(docker info --format '{{.ServerVersion}}' 2>/dev/null) (daemon running)"
+        # Bring up the local infra the dev loop needs (Postgres + the smtp4dev
+        # mail sink). Idempotent — a no-op if both are already running. Without
+        # `mail`, registration/password-reset emails fail with a connection
+        # refused on localhost:2525.
+        if (cd "$(dirname "$0")/.." && docker compose up -d db mail >/dev/null 2>&1); then
+            ok "docker compose: db + mail up"
+        else
+            bad "docker compose up -d db mail failed — run it manually to see why"
+        fi
     else
         bad "docker is installed but its daemon is not running — start Docker Desktop"
     fi

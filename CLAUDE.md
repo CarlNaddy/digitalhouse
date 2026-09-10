@@ -30,7 +30,7 @@ test project (`tests/DigitalHouse.Tests/`). Package versions are centrally
 managed in `Directory.Packages.props`.
 
 ```bash
-docker compose up -d db     # PostgreSQL for local dev
+docker compose up -d db mail  # PostgreSQL + smtp4dev mail sink for local dev
 dotnet tool restore         # dotnet-ef (first run only)
 dotnet run -- seed          # apply migrations + seed sample data (idempotent)
 dotnet watch run            # dev loop
