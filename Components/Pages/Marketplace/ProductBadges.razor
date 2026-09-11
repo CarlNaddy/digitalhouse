@@ -1,0 +1,24 @@
+@using DigitalHouse.Features.Marketplace
+
+@if (Item.IsCollectorListed || Item.IsOwnListing || Item.ViewerHasReservation)
+{
+    <div class="@Class">
+        @if (Item.IsOwnListing)
+        {
+            <MudChip T="string" Size="Size.Small" Color="Color.Primary">your listing</MudChip>
+        }
+        else if (Item.IsCollectorListed)
+        {
+            <MudChip T="string" Size="Size.Small" Color="Color.Secondary">owned asset</MudChip>
+        }
+        @if (Item.ViewerHasReservation)
+        {
+            <MudChip T="string" Size="Size.Small" Color="Color.Info">reserved</MudChip>
+        }
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public CatalogItem Item { get; set; } = null!;
+    [Parameter, EditorRequired] public string Class { get; set; } = "";
+}

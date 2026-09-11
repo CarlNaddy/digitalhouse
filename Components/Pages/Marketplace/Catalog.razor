@@ -47,36 +47,31 @@ else
     <MudGrid>
         @foreach (var item in _page.Items)
         {
-            <MudItem xs="12" sm="6" md="4" lg="3">
-                <MudCard>
-                    @if (item.PrimaryImageFileId is { } fileId)
-                    {
-                        <MudCardMedia Image="@($"/api/files/{fileId}")"
-                                      Style="height:auto;aspect-ratio:1 / 1" />
-                    }
-                    <MudCardContent>
-                        <MudText Typo="Typo.subtitle1">@item.Title</MudText>
-                        <MudText Typo="Typo.h6">@MarketplaceFormat.Usd(item.CurrentPriceCents)</MudText>
-                        <MudText Typo="Typo.caption"
-                                 Color="@(item.GrowthLast12MonthsCents >= 0 ? Color.Success : Color.Error)">
-                            Growth last year @MarketplaceFormat.SignedUsd(item.GrowthLast12MonthsCents)
-                        </MudText>
-                        <div class="d-flex gap-1 mt-2">
-                            @if (item.IsCollectorListed)
+            <MudItem xs="6" sm="4" md="3" lg="2">
+                <a href="@($"/marketplace/{item.Slug}")" class="product-card-link">
+                    <MudCard>
+                        @if (item.PrimaryImageFileId is { } fileId)
+                        {
+                            <div class="product-media">
+                                <MudCardMedia Image="@($"/api/files/{fileId}")"
+                                              Style="height:auto;aspect-ratio:1 / 1" />
+                                <ProductBadges Item="item" Class="product-media-badges" />
+                            </div>
+                        }
+                        <MudCardContent>
+                            @if (item.PrimaryImageFileId is null)
                             {
-                                <MudChip T="string" Size="Size.Small" Color="Color.Secondary">owned asset</MudChip>
+                                <ProductBadges Item="item" Class="d-flex gap-1 mb-2" />
                             }
-                            @if (item.ViewerHasReservation)
-                            {
-                                <MudChip T="string" Size="Size.Small" Color="Color.Info">reserved</MudChip>
-                            }
-                        </div>
-                    </MudCardContent>
-                    <MudCardActions>
-                        <MudButton Variant="Variant.Text" Color="Color.Primary"
-                                   Href="@($"/marketplace/{item.Slug}")">View</MudButton>
-                    </MudCardActions>
-                </MudCard>
+                            <MudText Typo="Typo.subtitle1">@item.Title</MudText>
+                            <MudText Typo="Typo.h6">@MarketplaceFormat.Usd(item.CurrentPriceCents)</MudText>
+                            <MudText Typo="Typo.caption"
+                                     Color="@(item.GrowthLast12MonthsCents >= 0 ? Color.Success : Color.Error)">
+                                Growth last year @MarketplaceFormat.SignedUsd(item.GrowthLast12MonthsCents)
+                            </MudText>
+                        </MudCardContent>
+                    </MudCard>
+                </a>
             </MudItem>
         }
     </MudGrid>

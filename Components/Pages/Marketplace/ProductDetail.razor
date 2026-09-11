@@ -22,22 +22,25 @@ else if (_vm is null)
 }
 else
 {
-    <div class="d-flex align-center gap-2 mb-4 flex-wrap">
-        <MudText Typo="Typo.h4">@_vm.Product.Title</MudText>
-        @if (_vm.IsListedForResale)
-        {
-            <MudChip T="string" Size="Size.Small" Color="Color.Secondary">owned asset</MudChip>
-        }
-        @if (_vm.ViewerHasReservation)
-        {
-            <MudChip T="string" Size="Size.Small" Color="Color.Info">reserved by you</MudChip>
-        }
-        <MudSpacer />
-        @RenderAction()
+    <div class="product-header">
+        <div class="product-header-title">
+            <MudText Typo="Typo.h4">@_vm.Product.Title</MudText>
+            @if (_vm.IsListedForResale)
+            {
+                <MudChip T="string" Size="Size.Small" Color="Color.Secondary">owned asset</MudChip>
+            }
+            @if (_vm.ViewerHasReservation)
+            {
+                <MudChip T="string" Size="Size.Small" Color="Color.Info">reserved by you</MudChip>
+            }
+        </div>
+        <div class="product-actions">
+            @RenderAction()
+        </div>
     </div>
 
-    <MudGrid>
-        <MudItem xs="12" md="5">
+    <div class="product-layout">
+        <div class="product-image">
             @if (_vm.ImageFileIds.Count > 0)
             {
                 <MudCarousel Class="rounded" Style="width:100%;aspect-ratio:1 / 1"
@@ -59,9 +62,9 @@ else
                     <MudIcon Icon="@Icons.Material.Filled.Image" Size="Size.Large" Class="mud-text-secondary" />
                 </MudPaper>
             }
-        </MudItem>
+        </div>
 
-        <MudItem xs="12" md="7">
+        <div class="product-details">
             <MudPaper Class="pa-4" Elevation="1">
                 <MudSimpleTable Dense="true" Hover="false" Elevation="0">
                     <tbody>
@@ -80,7 +83,7 @@ else
                         <tr>
                             <td>Certificate ID</td>
                             <td>
-                                <span style="font-family:var(--mud-typography-monospace-family, monospace)">@_certificateId</span>
+                                <span style="font-family:var(--mud-typography-monospace-family, monospace);word-break:break-all">@_certificateId</span>
                                 @if (_vm.ViewerIsCurrentOwner)
                                 {
                                     <MudText Typo="Typo.caption" Class="mud-text-secondary d-block">Registered to you</MudText>
@@ -94,13 +97,12 @@ else
                     </tbody>
                 </MudSimpleTable>
             </MudPaper>
-        </MudItem>
-    </MudGrid>
+        </div>
+    </div>
 
     <MudPaper Class="pa-4 mt-4" Elevation="1">
-        <div class="d-flex align-center gap-2 mb-2 flex-wrap">
+        <div class="chart-header">
             <MudText Typo="Typo.subtitle1">Price history</MudText>
-            <MudSpacer />
             <MudToggleGroup T="string" Value="_range" ValueChanged="OnRangeChanged" Size="Size.Small"
                             Color="Color.Primary" CheckMark="false" SelectionMode="SelectionMode.SingleSelection">
                 @foreach (var r in PriceChartSampler.Ranges)

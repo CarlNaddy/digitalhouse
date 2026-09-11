@@ -199,7 +199,7 @@ builder.Services.AddScoped<ListingPhotoService>();
 // Marketplace feature (openspec: add-digital-asset-marketplace) — options,
 // domain services, the Stripe payment seam, and recurring jobs. See
 // Features/Marketplace/MarketplaceServiceCollectionExtensions.cs.
-builder.Services.AddMarketplace(builder.Configuration);
+builder.Services.AddMarketplace(builder.Configuration, builder.Environment);
 
 // dotnet-aspnetcore:minimal-api-file-upload — the multipart body limit is a
 // global FormOptions setting with no per-endpoint override, but this app has

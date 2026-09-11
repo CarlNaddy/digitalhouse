@@ -1,0 +1,108 @@
+/* This page uses a custom ~420px breakpoint instead of MudBlazor's xs/sm/md
+   scale (600/960/1280px) — a phone in portrait is comfortably wide enough for
+   the image-beside-details layout well before MudBlazor's own "md" (960px,
+   tablet-landscape-and-up) would switch it on, so the stock breakpoints would
+   leave every phone stacked for no reason. */
+
+.product-header {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .75rem;
+    margin-bottom: 1rem;
+}
+
+.product-header-title {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    flex-wrap: wrap;
+}
+
+/* A single action (Buy / Sign in to buy) fills the width for an easy mobile
+   tap target; a two-button action (List for resale / Sell back) stacks its
+   buttons full-width rather than squeezing them side by side. */
+.product-actions {
+    width: 100%;
+}
+
+.product-actions ::deep .mud-button-root {
+    width: 100%;
+}
+
+.product-actions ::deep .d-flex {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.product-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.product-image {
+    /* Stacked (mobile) layout: without an explicit width here, this flex
+       item sizes to its content, but its only content (the carousel) is
+       itself "width:100% of parent" — a circular reference some browsers
+       resolve to 0, collapsing the image to nothing. */
+    width: 100%;
+}
+
+.product-details {
+    /* Without this a flex item won't shrink below its content's natural
+       width, so the price/certificate table could push the page wider than
+       the viewport right around the breakpoint — a real (if easy to miss)
+       overflow bug, not just a desktop nicety. */
+    min-width: 0;
+}
+
+.chart-header {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    flex-wrap: wrap;
+    margin-bottom: .5rem;
+}
+
+.chart-header ::deep .mud-toggle-group {
+    width: 100%;
+}
+
+@media (min-width: 580px) {
+    .product-header {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+    }
+
+    .product-actions {
+        width: auto;
+    }
+
+    .product-actions ::deep .mud-button-root {
+        width: auto;
+    }
+
+    .product-actions ::deep .d-flex {
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .product-layout {
+        flex-direction: row;
+        align-items: flex-start;
+    }
+
+    .product-image {
+        flex: 0 0 42%;
+        max-width: 42%;
+    }
+
+    .chart-header ::deep .mud-toggle-group {
+        width: auto;
+        margin-left: auto;
+    }
+}

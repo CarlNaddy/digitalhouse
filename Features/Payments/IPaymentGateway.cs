@@ -6,7 +6,8 @@ namespace DigitalHouse.Features.Payments;
 /// The thin seam between the marketplace and Stripe (openspec:
 /// add-digital-asset-marketplace). Every purchase is a single full charge for
 /// the product's quoted price; there is no store-credit split. A fake
-/// implementation replaces this in tests.
+/// implementation replaces this in tests, and <see cref="DevFakePaymentGateway"/>
+/// replaces it in local Development when Stripe isn't configured.
 /// </summary>
 public interface IPaymentGateway
 {

@@ -1,7 +1,10 @@
+using DigitalHouse.Data;
 using DigitalHouse.Features.Jobs;
 using DigitalHouse.Features.Payments;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Stripe;
 
@@ -16,10 +19,12 @@ public static class MarketplaceServiceCollectionExtensions
 {
     public static IServiceCollection AddMarketplace(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IHostEnvironment environment)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
+        ArgumentNullException.ThrowIfNull(environment);
 
         services.AddOptions<MarketplaceOptions>()
             .Bind(configuration.GetSection(MarketplaceOptions.SectionName))
@@ -29,8 +34,11 @@ public static class MarketplaceServiceCollectionExtensions
         // Stripe credentials (section "Stripe", from user-secrets / env — never
         // appsettings). Validated on access, not on start: `dotnet run -- seed`,
         // CI, and dev without Stripe configured must still boot. The real
-        // gateway fails loudly when a payment is attempted without keys; the
-        // fake gateway used in tests needs none.
+        // gateway fails loudly when a payment is attempted without keys — except
+        // in Development while the key is still the scaffolded placeholder,
+        // where DevFakePaymentGateway takes over below so the marketplace demo
+        // works without a real Stripe account. Tests inject FakePaymentGateway
+        // directly — there is no host-based test environment to swap it in.
         services.AddOptions<StripeOptions>()
             .Bind(configuration.GetSection(StripeOptions.SectionName))
             .ValidateDataAnnotations();
@@ -38,11 +46,18 @@ public static class MarketplaceServiceCollectionExtensions
         services.AddScoped<PricingEngine>();
 
         // Stripe payment seam. One StripeClient (thread-safe, holds the secret
-        // key); the real gateway is the default. Tests inject FakePaymentGateway
-        // directly — there is no host-based test environment to swap it in.
+        // key), constructed unconditionally — the placeholder decides which
+        // IPaymentGateway wraps it, not whether the client exists.
         services.AddSingleton<IStripeClient>(sp =>
             new StripeClient(sp.GetRequiredService<IOptions<StripeOptions>>().Value.SecretKey));
-        services.AddScoped<IPaymentGateway, StripePaymentGateway>();
+        services.AddScoped<StripePaymentGateway>();
+        services.AddScoped<IPaymentGateway>(sp =>
+        {
+            var secretKey = sp.GetRequiredService<IOptions<StripeOptions>>().Value.SecretKey;
+            return environment.IsDevelopment() && !LooksLikeRealStripeKey(secretKey)
+                ? new DevFakePaymentGateway()
+                : sp.GetRequiredService<StripePaymentGateway>();
+        });
         services.AddScoped<StripeWebhookProcessor>();
 
         // Wallet / ownership / eligibility.
@@ -74,4 +89,13 @@ public static class MarketplaceServiceCollectionExtensions
 
         return services;
     }
+
+    // The setup scripts seed Stripe:SecretKey with a scaffolded placeholder
+    // ("sk_test_PLACEHOLDER_replace_with_real_stripe_test_key") so the app
+    // boots without user-secrets configured. Anything else shaped like a real
+    // test/live key is treated as intentionally configured.
+    private static bool LooksLikeRealStripeKey(string secretKey) =>
+        !string.IsNullOrWhiteSpace(secretKey)
+        && (secretKey.StartsWith("sk_test_", StringComparison.Ordinal) || secretKey.StartsWith("sk_live_", StringComparison.Ordinal))
+        && !secretKey.Contains("PLACEHOLDER", StringComparison.Ordinal);
 }

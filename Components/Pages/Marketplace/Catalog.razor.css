@@ -1,0 +1,29 @@
+.product-card-link {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+}
+
+.product-card-link:focus-visible ::deep .mud-card {
+    outline: 2px solid var(--mud-palette-secondary);
+    outline-offset: 2px;
+}
+
+.product-media {
+    position: relative;
+}
+
+.product-media ::deep .product-media-badges {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
+.product-media ::deep .product-media-badges .mud-chip {
+    box-shadow: 0 1px 6px rgba(0, 0, 0, .55);
+}

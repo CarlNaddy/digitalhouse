@@ -112,11 +112,18 @@
             {
                 _error = "Payment was not completed.";
                 _paying = false;
+                await JS.InvokeVoidAsync("gameFx.playError");
                 return;
             }
 
             await Actions.CompletePurchaseAsync(Reservation, new PaymentConfirmation(intent.PaymentIntentId), default);
-            Snackbar.Add($"You now own {Product.Title}.", Severity.Success);
+            Snackbar.Add(LevelUpToast(Product.Title), Severity.Success, config =>
+            {
+                config.Icon = "";
+                config.VisibleStateDuration = 4200;
+                config.HideTransitionDuration = 300;
+            });
+            await JS.InvokeVoidAsync("gameFx.playCoin");
             StopTimer();
             MudDialog.Close(DialogResult.Ok(true));
         }
@@ -124,6 +131,7 @@
         {
             _error = ex.Message;
             _paying = false;
+            await JS.InvokeVoidAsync("gameFx.playError");
         }
     }
 
@@ -141,6 +149,17 @@
             return true;
         }
     }
+
+    // A "level-up" style toast for a completed purchase — plain-text snackbars
+    // elsewhere stay plain; this is the one moment the theme calls out (game-fx.js
+    // pairs it with the coin chime).
+    private static RenderFragment LevelUpToast(string itemTitle) => @<div class="levelup-toast">
+        <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" Class="levelup-toast-icon" />
+        <div>
+            <div class="levelup-toast-title">Level up!</div>
+            <div class="levelup-toast-item">You now own @itemTitle</div>
+        </div>
+    </div>;
 
     private void Cancel()
     {

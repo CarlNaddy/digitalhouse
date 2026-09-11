@@ -1,0 +1,41 @@
+.account-menu-email {
+    padding: .5rem 1rem;
+    font-size: .8rem;
+    color: var(--mud-palette-text-secondary);
+    max-width: 240px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.account-menu-logout-form {
+    margin: 0;
+}
+
+.account-menu-logout {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    width: 100%;
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 6px 16px;
+    font: inherit;
+    font-size: .875rem;
+    color: var(--mud-palette-error);
+    text-align: left;
+}
+
+.account-menu-logout:hover {
+    background: var(--mud-palette-action-default-hover);
+}
+
+/* Icons stay tappable at every width; only the text label collapses, so
+   "Log in" / "Register" still fit the app bar next to the logo and the
+   language/sound/theme toggles on a phone. */
+@media (max-width: 599px) {
+    .toolbar-btn-label {
+        display: none;
+    }
+}

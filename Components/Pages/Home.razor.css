@@ -1,0 +1,25 @@
+.home-hero {
+    position: relative;
+    text-align: center;
+    border-radius: 10px;
+    background:
+        radial-gradient(60% 140% at 50% 0%, color-mix(in srgb, var(--mud-palette-primary) 22%, transparent), transparent),
+        var(--mud-palette-surface);
+    border: 1px solid var(--mud-palette-lines-default);
+    overflow: hidden;
+}
+
+.home-hero::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    transform: translateX(-50%);
+    width: min(320px, 70%);
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--mud-palette-secondary), transparent);
+}
+
+.home-hero-title {
+    text-shadow: 0 0 18px color-mix(in srgb, var(--mud-palette-primary) 45%, transparent);
+}

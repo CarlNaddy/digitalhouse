@@ -1,4 +1,5 @@
 using DigitalHouse.Features.Marketplace;
+using DigitalHouse.Tests.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -19,7 +20,7 @@ public sealed class MarketplaceOptionsTests
             .Build();
 
         using var provider = new ServiceCollection()
-            .AddMarketplace(configuration)
+            .AddMarketplace(configuration, new TestHostEnvironment())
             .BuildServiceProvider();
 
         return provider.GetRequiredService<IOptions<MarketplaceOptions>>().Value;

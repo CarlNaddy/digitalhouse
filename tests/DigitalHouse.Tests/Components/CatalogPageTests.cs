@@ -9,11 +9,12 @@ using MudBlazor;
 namespace DigitalHouse.Tests.Components;
 
 /// <summary>
-/// <see cref="Catalog"/> (openspec: add-digital-asset-marketplace, task 12.2):
-/// the "owned asset" badge and "reserved" marker render for the right entries,
-/// and every card links to the product's detail page. (Owned entries never
-/// reach the catalog — see <see cref="CatalogQueryTests"/> — so there is no
-/// owner buy action to hide here.)
+/// <see cref="Catalog"/> (openspec: add-digital-asset-marketplace, task 12.2;
+/// show-own-listing-in-catalog): the "owned asset" badge, the viewer's own
+/// "your listing" badge, and the "reserved" marker render for the right
+/// entries, and every card links to the product's detail page. Which rows the
+/// query itself includes/excludes is <see cref="CatalogQueryTests"/>'s job —
+/// these tests only check what a given <see cref="CatalogItem"/> renders as.
 /// </summary>
 public sealed class CatalogPageTests : MudBlazorTestContext
 {
@@ -31,9 +32,9 @@ public sealed class CatalogPageTests : MudBlazorTestContext
     {
         _query.Page = new CatalogPage(
             [
-                new CatalogItem("marketplace-one", "Marketplace One", null, 500, 120, IsCollectorListed: false, ViewerHasReservation: false),
-                new CatalogItem("collector-two", "Collector Two", null, 900, -40, IsCollectorListed: true, ViewerHasReservation: false),
-                new CatalogItem("held-by-me", "Held By Me", null, 700, 10, IsCollectorListed: true, ViewerHasReservation: true),
+                new CatalogItem("marketplace-one", "Marketplace One", null, 500, 120, IsCollectorListed: false, ViewerHasReservation: false, IsOwnListing: false),
+                new CatalogItem("collector-two", "Collector Two", null, 900, -40, IsCollectorListed: true, ViewerHasReservation: false, IsOwnListing: false),
+                new CatalogItem("held-by-me", "Held By Me", null, 700, 10, IsCollectorListed: true, ViewerHasReservation: true, IsOwnListing: false),
             ],
             TotalCount: 3, Page: 1, PageSize: 24);
 
@@ -48,6 +49,23 @@ public sealed class CatalogPageTests : MudBlazorTestContext
         Assert.Contains("reserved", cards[2].Markup);
 
         Assert.Contains(cut.FindAll("a"), a => a.GetAttribute("href") == "/marketplace/collector-two");
+    }
+
+    [Fact]
+    public void Renders_your_listing_badge_instead_of_owned_asset_for_the_viewers_own_listing()
+    {
+        _query.Page = new CatalogPage(
+            [
+                new CatalogItem("mine", "Mine", null, 500, 120, IsCollectorListed: false, ViewerHasReservation: false, IsOwnListing: true),
+            ],
+            TotalCount: 1, Page: 1, PageSize: 24);
+
+        var cut = Render<Catalog>();
+
+        var card = Assert.Single(cut.FindComponents<MudCard>());
+        Assert.Contains("your listing", card.Markup);
+        Assert.DoesNotContain("owned asset", card.Markup);
+        Assert.DoesNotContain("reserved", card.Markup);
     }
 
     [Fact]

@@ -14,7 +14,11 @@ namespace DigitalHouse.Tests.Components;
 /// <summary>
 /// <see cref="MyAssets"/> (openspec: add-digital-asset-marketplace, task 13.2):
 /// owned rows show the full certificate id and the trading figures, and the
-/// "Sell back" button appears only when buyback is currently permitted.
+/// "Sell back" button appears only when buyback is currently permitted. The
+/// page renders a data-grid view and a card view for the same rows side by
+/// side, toggled by CSS media query alone (no JS breakpoint detection) — bUnit
+/// doesn't evaluate media queries, so both are present in the markup at once;
+/// tests that need exactly one element scope their query to `.assets-table`.
 /// </summary>
 public sealed class MyAssetsPageTests : MudBlazorTestContext
 {
@@ -42,7 +46,8 @@ public sealed class MyAssetsPageTests : MudBlazorTestContext
         Assert.Contains(withinCap.CertificateId, cut.Markup);
         Assert.Contains(aboveCap.CertificateId, cut.Markup);
 
-        var sellBackButtons = cut.FindAll("button").Where(b => b.TextContent.Contains("Sell back")).ToList();
+        var table = cut.Find(".assets-table");
+        var sellBackButtons = table.QuerySelectorAll("button").Where(b => b.TextContent.Contains("Sell back")).ToList();
         Assert.Single(sellBackButtons);
     }
 
@@ -62,7 +67,8 @@ public sealed class MyAssetsPageTests : MudBlazorTestContext
         _view.Rows = [Row(canSellBack: true, isListed: false)];
         var cut = Render<MyAssets>();
 
-        var button = cut.FindAll("button").Single(b => b.TextContent.Contains("Sell back"));
+        var table = cut.Find(".assets-table");
+        var button = table.QuerySelectorAll("button").Single(b => b.TextContent.Contains("Sell back"));
         await button.ClickAsync(new Microsoft.AspNetCore.Components.Web.MouseEventArgs());
 
         Assert.Contains(_actions.Calls, c => c.StartsWith("SellBack", StringComparison.Ordinal));

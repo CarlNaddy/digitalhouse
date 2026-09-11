@@ -23,53 +23,105 @@ else if (_rows.Count == 0)
 }
 else
 {
-    <MudDataGrid T="OwnedAssetRow" Items="_rows" Dense="true" Hover="true">
-        <Columns>
-            <TemplateColumn Title="Asset">
-                <CellTemplate>
-                    <MudLink Href="@($"/marketplace/{context.Item.Slug}")">@context.Item.Title</MudLink>
-                    <MudText Typo="Typo.caption" Class="mud-text-secondary d-block"
-                             Style="font-family:var(--mud-typography-monospace-family, monospace)">
-                        @context.Item.CertificateId
-                    </MudText>
-                </CellTemplate>
-            </TemplateColumn>
-            <TemplateColumn Title="Buy price">
-                <CellTemplate>@MarketplaceFormat.Usd(context.Item.BuyPriceCents)</CellTemplate>
-            </TemplateColumn>
-            <TemplateColumn Title="Current">
-                <CellTemplate>@MarketplaceFormat.Usd(context.Item.CurrentPriceCents)</CellTemplate>
-            </TemplateColumn>
-            <TemplateColumn Title="Gain">
-                <CellTemplate>
-                    <span class="@(context.Item.UnrealisedGainCents >= 0 ? "mud-success-text" : "mud-error-text")">
-                        @MarketplaceFormat.SignedUsd(context.Item.UnrealisedGainCents)
-                    </span>
-                </CellTemplate>
-            </TemplateColumn>
-            <TemplateColumn Title="Growth (1y)">
-                <CellTemplate>@MarketplaceFormat.SignedUsd(context.Item.GrowthLast12MonthsCents)</CellTemplate>
-            </TemplateColumn>
-            <TemplateColumn Title="" Sortable="false">
-                <CellTemplate>
-                    <div class="d-flex gap-2 align-center">
-                        @if (context.Item.IsListedForResale)
-                        {
-                            <MudChip T="string" Size="Size.Small" Color="Color.Secondary">listed</MudChip>
-                        }
-                        @if (context.Item.CanSellBack)
-                        {
-                            <MudButton Size="Size.Small" Variant="Variant.Outlined"
-                                       OnClick="@(() => SellBackAsync(context.Item))">Sell back</MudButton>
-                        }
+    @* Below 900px a 6-column grid either forces horizontal scrolling or
+       truncates into illegibility, so narrow screens get a stacked card per
+       asset instead of the data grid — both render from the same _rows, CSS
+       just picks which one is visible (see MyAssets.razor.css). *@
+    <div class="assets-table">
+        <MudDataGrid T="OwnedAssetRow" Items="_rows" Dense="true" Hover="true">
+            <Columns>
+                <TemplateColumn Title="Asset">
+                    <CellTemplate>
+                        <MudLink Href="@($"/marketplace/{context.Item.Slug}")">@context.Item.Title</MudLink>
+                        <MudText Typo="Typo.caption" Class="mud-text-secondary d-block"
+                                 Style="font-family:var(--mud-typography-monospace-family, monospace)">
+                            @context.Item.CertificateId
+                        </MudText>
+                    </CellTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="Buy price">
+                    <CellTemplate>@MarketplaceFormat.Usd(context.Item.BuyPriceCents)</CellTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="Current">
+                    <CellTemplate>@MarketplaceFormat.Usd(context.Item.CurrentPriceCents)</CellTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="Gain">
+                    <CellTemplate>
+                        <span class="@(context.Item.UnrealisedGainCents >= 0 ? "mud-success-text" : "mud-error-text")">
+                            @MarketplaceFormat.SignedUsd(context.Item.UnrealisedGainCents)
+                        </span>
+                    </CellTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="Growth (1y)">
+                    <CellTemplate>@MarketplaceFormat.SignedUsd(context.Item.GrowthLast12MonthsCents)</CellTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="" Sortable="false">
+                    <CellTemplate>
+                        <div class="d-flex gap-2 align-center">
+                            @if (context.Item.IsListedForResale)
+                            {
+                                <MudChip T="string" Size="Size.Small" Color="Color.Secondary">listed</MudChip>
+                            }
+                            @if (context.Item.CanSellBack)
+                            {
+                                <MudButton Size="Size.Small" Variant="Variant.Outlined"
+                                           OnClick="@(() => SellBackAsync(context.Item))">Sell back</MudButton>
+                            }
+                        </div>
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+            <PagerContent>
+                <MudDataGridPager T="OwnedAssetRow" />
+            </PagerContent>
+        </MudDataGrid>
+    </div>
+
+    <div class="assets-cards">
+        @foreach (var row in _rows)
+        {
+            <MudPaper Class="pa-4 mb-3 asset-card" Elevation="1">
+                <div class="d-flex justify-space-between align-start gap-2 mb-3">
+                    <div>
+                        <MudLink Href="@($"/marketplace/{row.Slug}")" Typo="Typo.subtitle1">@row.Title</MudLink>
+                        <MudText Typo="Typo.caption" Class="mud-text-secondary d-block"
+                                 Style="font-family:var(--mud-typography-monospace-family, monospace)">
+                            @row.CertificateId
+                        </MudText>
                     </div>
-                </CellTemplate>
-            </TemplateColumn>
-        </Columns>
-        <PagerContent>
-            <MudDataGridPager T="OwnedAssetRow" />
-        </PagerContent>
-    </MudDataGrid>
+                    @if (row.IsListedForResale)
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Secondary">listed</MudChip>
+                    }
+                </div>
+                <div class="asset-card-stats">
+                    <div class="asset-card-stat">
+                        <span class="asset-card-label">Buy price</span>
+                        <span>@MarketplaceFormat.Usd(row.BuyPriceCents)</span>
+                    </div>
+                    <div class="asset-card-stat">
+                        <span class="asset-card-label">Current</span>
+                        <span>@MarketplaceFormat.Usd(row.CurrentPriceCents)</span>
+                    </div>
+                    <div class="asset-card-stat">
+                        <span class="asset-card-label">Gain</span>
+                        <span class="@(row.UnrealisedGainCents >= 0 ? "mud-success-text" : "mud-error-text")">
+                            @MarketplaceFormat.SignedUsd(row.UnrealisedGainCents)
+                        </span>
+                    </div>
+                    <div class="asset-card-stat">
+                        <span class="asset-card-label">Growth (1y)</span>
+                        <span>@MarketplaceFormat.SignedUsd(row.GrowthLast12MonthsCents)</span>
+                    </div>
+                </div>
+                @if (row.CanSellBack)
+                {
+                    <MudButton Class="mt-3" FullWidth="true" Size="Size.Small" Variant="Variant.Outlined"
+                               OnClick="@(() => SellBackAsync(row))">Sell back</MudButton>
+                }
+            </MudPaper>
+        }
+    </div>
 }
 
 @code {

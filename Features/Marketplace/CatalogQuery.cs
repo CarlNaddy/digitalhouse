@@ -33,7 +33,8 @@ public sealed record CatalogItem(
     long CurrentPriceCents,
     long GrowthLast12MonthsCents,
     bool IsCollectorListed,
-    bool ViewerHasReservation);
+    bool ViewerHasReservation,
+    bool IsOwnListing);
 
 /// <summary>A page of catalog results.</summary>
 public sealed record CatalogPage(IReadOnlyList<CatalogItem> Items, int TotalCount, int Page, int PageSize)
@@ -48,11 +49,14 @@ public interface ICatalogQuery
 }
 
 /// <summary>
-/// Backs the marketplace catalog (openspec: add-digital-asset-marketplace) — the
-/// buyable-only listing: products the viewer could buy right now
-/// (marketplace-held or collector-listed), never the viewer's own and never
-/// under another user's active reservation. Collector-listed products get a
-/// resale boost above unowned inventory within the chosen sort.
+/// Backs the marketplace catalog (openspec: add-digital-asset-marketplace,
+/// show-own-listing-in-catalog) — the buyable-only listing: products the
+/// viewer could buy right now (marketplace-held or collector-listed), never
+/// under another user's active reservation. A product the viewer owns is
+/// excluded unless they have actively listed it for resale, in which case it
+/// still appears — for visibility only, never buyable by them. Collector-listed
+/// products (including the viewer's own listing) get a resale boost above
+/// unowned inventory within the chosen sort.
 /// </summary>
 public sealed class CatalogQuery(
     IDbContextFactory<AppDbContext> dbFactory,
@@ -71,8 +75,11 @@ public sealed class CatalogQuery(
         await ReservationExpiry.ExpireStaleAsync(db, now, productId: null, ct);
 
         var query = db.Products.AsNoTracking().Where(p =>
-            // not currently held by the viewer
-            !db.AssetOwnerships.Any(o => o.ProductId == p.Id && o.ReleasedAt == null && o.UserId == viewerId)
+            // held by the viewer and not listed by them: never shown. Held by
+            // the viewer and listed: shown anyway (see IsOwnListing below) —
+            // it's their own listing, not something they can buy.
+            !(db.AssetOwnerships.Any(o => o.ProductId == p.Id && o.ReleasedAt == null && o.UserId == viewerId)
+                && !db.ResaleListings.Any(l => l.ProductId == p.Id && l.Status == ResaleListingStatus.Active))
             // buyable: no user currently holds it, OR it is listed for resale
             && (!db.AssetOwnerships.Any(o => o.ProductId == p.Id && o.ReleasedAt == null && o.UserId != null)
                 || db.ResaleListings.Any(l => l.ProductId == p.Id && l.Status == ResaleListingStatus.Active))
@@ -123,9 +130,18 @@ public sealed class CatalogQuery(
                 db.ProductImages.Where(i => i.ProductId == p.Id)
                     .OrderByDescending(i => i.IsPrimary).ThenBy(i => i.Position)
                     .Select(i => (Guid?)i.StoredFileId).FirstOrDefault(),
-                db.ResaleListings.Any(l => l.ProductId == p.Id && l.Status == ResaleListingStatus.Active),
+                // "Collector-listed" excludes the viewer's own listing — that
+                // one gets the distinct IsOwnListing flag/badge below, not
+                // "owned asset" (see marketplace-catalog spec, *Collector-asset
+                // badge*).
+                db.ResaleListings.Any(l => l.ProductId == p.Id && l.Status == ResaleListingStatus.Active)
+                    && !(viewerId != null && db.AssetOwnerships.Any(o =>
+                        o.ProductId == p.Id && o.ReleasedAt == null && o.UserId == viewerId)),
                 viewerId != null && db.Reservations.Any(r =>
-                    r.ProductId == p.Id && r.Status == ReservationStatus.Active && r.UserId == viewerId)))
+                    r.ProductId == p.Id && r.Status == ReservationStatus.Active && r.UserId == viewerId),
+                viewerId != null
+                    && db.AssetOwnerships.Any(o => o.ProductId == p.Id && o.ReleasedAt == null && o.UserId == viewerId)
+                    && db.ResaleListings.Any(l => l.ProductId == p.Id && l.Status == ResaleListingStatus.Active)))
             .ToListAsync(ct);
 
         var items = rows.Select(r => new CatalogItem(
@@ -135,7 +151,8 @@ public sealed class CatalogQuery(
             (long)Math.Round(r.CurrentPriceMicros / 10_000m, MidpointRounding.AwayFromZero),
             PricingEngine.GrowthLast12Months(r.PriceSeed, r.CreatedAt, now),
             r.IsCollectorListed,
-            r.ViewerHasReservation)).ToList();
+            r.ViewerHasReservation,
+            r.IsOwnListing)).ToList();
 
         return new CatalogPage(items, totalCount, page, pageSize);
     }
@@ -148,5 +165,6 @@ public sealed class CatalogQuery(
         long CurrentPriceMicros,
         Guid? PrimaryImageFileId,
         bool IsCollectorListed,
-        bool ViewerHasReservation);
+        bool ViewerHasReservation,
+        bool IsOwnListing);
 }

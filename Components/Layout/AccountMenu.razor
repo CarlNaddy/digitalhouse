@@ -1,19 +1,39 @@
-@* Auth links in the app bar (parity plan P3.3). The logout form posts to a
-   minimal API endpoint (Endpoints/AccountEndpoints.cs), not a component, so it
-   works regardless of the calling page's render mode. *@
+@* Auth links in the app bar (parity plan P3.3). Authenticated: a single
+   avatar menu (email, Account, Log out) instead of three separate inline
+   controls — a long email address plus "Account"/"Log out" text buttons
+   don't fit the app bar on a phone alongside the logo and the
+   language/sound/theme toggles (CLAUDE.md's MudBlazor mobile-toolbar work).
+   The logout form posts to a minimal API endpoint
+   (Endpoints/AccountEndpoints.cs), not a component, so it works regardless
+   of the calling page's render mode; it's a real <form> inside the menu's
+   own popover (not a MudMenuItem) so the POST + antiforgery token don't need
+   a JS interop round-trip to fire from a menu click. *@
 
 <AuthorizeView>
     <Authorized>
-        <MudText Class="mr-2 align-self-center">@context.User.Identity?.Name</MudText>
-        <MudButton Href="Account/Manage" Variant="Variant.Text" Color="Color.Inherit">Account</MudButton>
-        <form action="Account/Logout" method="post">
-            <AntiforgeryToken />
-            <input type="hidden" name="returnUrl" value="/" />
-            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Text" Color="Color.Inherit">Log out</MudButton>
-        </form>
+        <MudMenu Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Inherit"
+                 AriaLabel="Account menu" Dense="true">
+            <div class="account-menu-email">@context.User.Identity?.Name</div>
+            <MudDivider Class="my-1" />
+            <MudMenuItem Href="Account/Manage" Icon="@Icons.Material.Filled.ManageAccounts">Account</MudMenuItem>
+            <form action="Account/Logout" method="post" class="account-menu-logout-form">
+                <AntiforgeryToken />
+                <input type="hidden" name="returnUrl" value="/" />
+                <button type="submit" class="account-menu-logout">
+                    <MudIcon Icon="@Icons.Material.Filled.Logout" Size="Size.Small" />
+                    Log out
+                </button>
+            </form>
+        </MudMenu>
     </Authorized>
     <NotAuthorized>
-        <MudButton Href="Account/Login" Variant="Variant.Text" Color="Color.Inherit">Log in</MudButton>
-        <MudButton Href="Account/Register" Variant="Variant.Text" Color="Color.Inherit">Register</MudButton>
+        <MudButton Href="Account/Login" Variant="Variant.Text" Color="Color.Inherit"
+                   StartIcon="@Icons.Material.Filled.Login" aria-label="Log in">
+            <span class="toolbar-btn-label">Log in</span>
+        </MudButton>
+        <MudButton Href="Account/Register" Variant="Variant.Text" Color="Color.Inherit"
+                   StartIcon="@Icons.Material.Filled.PersonAdd" aria-label="Register">
+            <span class="toolbar-btn-label">Register</span>
+        </MudButton>
     </NotAuthorized>
 </AuthorizeView>

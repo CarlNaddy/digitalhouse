@@ -35,6 +35,24 @@ public sealed class CatalogQueryTests(PostgresFixture fixture) : DatabaseTest(fi
     }
 
     [Fact]
+    public async Task The_viewers_own_listed_product_appears_flagged_as_their_own_listing()
+    {
+        var listed = await SeedProductAsync("mine-listed");
+        var unlisted = await SeedProductAsync("mine-unlisted");
+        await AddOwnershipAsync(listed.Id, Viewer);
+        await AddOwnershipAsync(unlisted.Id, Viewer);
+        await AddActiveListingAsync(listed.Id, Viewer);
+
+        var page = await Query().BrowseAsync(new CatalogFilter(), Viewer, Ct);
+
+        var item = Assert.Single(page.Items);
+        Assert.Equal("mine-listed", item.Slug);
+        Assert.True(item.IsOwnListing);
+        Assert.False(item.IsCollectorListed);
+        Assert.False(item.ViewerHasReservation);
+    }
+
+    [Fact]
     public async Task A_product_held_by_another_user_shows_only_when_it_is_listed_for_resale()
     {
         var unlisted = await SeedProductAsync("held-unlisted");

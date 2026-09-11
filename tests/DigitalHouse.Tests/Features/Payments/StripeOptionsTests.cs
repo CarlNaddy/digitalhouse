@@ -1,7 +1,11 @@
+using DigitalHouse.Data;
 using DigitalHouse.Features.Marketplace;
 using DigitalHouse.Features.Payments;
+using DigitalHouse.Tests.Infrastructure;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
 namespace DigitalHouse.Tests.Features.Payments;
@@ -27,7 +31,7 @@ public sealed class StripeOptionsTests
             .Build();
 
         using var provider = new ServiceCollection()
-            .AddMarketplace(configuration)
+            .AddMarketplace(configuration, new TestHostEnvironment())
             .BuildServiceProvider();
 
         var stripe = provider.GetRequiredService<IOptions<StripeOptions>>().Value;
@@ -45,11 +49,61 @@ public sealed class StripeOptionsTests
         // No ValidateOnStart on StripeOptions — building the provider and
         // resolving IOptions must not throw when Stripe is unconfigured.
         using var provider = new ServiceCollection()
-            .AddMarketplace(configuration)
+            .AddMarketplace(configuration, new TestHostEnvironment())
             .BuildServiceProvider();
 
         var accessor = provider.GetRequiredService<IOptions<StripeOptions>>();
 
         Assert.NotNull(accessor);
+    }
+
+    [Fact]
+    public void AddMarketplace_uses_the_dev_fake_gateway_in_Development_with_a_placeholder_key()
+    {
+        var provider = BuildProvider(Environments.Development, "sk_test_PLACEHOLDER_replace_with_real_stripe_test_key");
+
+        Assert.IsType<DevFakePaymentGateway>(provider.GetRequiredService<IPaymentGateway>());
+    }
+
+    [Fact]
+    public void AddMarketplace_uses_the_real_gateway_in_Development_once_a_real_key_is_set()
+    {
+        var provider = BuildProvider(Environments.Development, "sk_test_51ABC123realLookingKey");
+
+        Assert.IsType<StripePaymentGateway>(provider.GetRequiredService<IPaymentGateway>());
+    }
+
+    [Fact]
+    public void AddMarketplace_uses_the_real_gateway_outside_Development_even_with_a_placeholder_key()
+    {
+        var provider = BuildProvider(Environments.Production, "sk_test_PLACEHOLDER_replace_with_real_stripe_test_key");
+
+        Assert.IsType<StripePaymentGateway>(provider.GetRequiredService<IPaymentGateway>());
+    }
+
+    // StripePaymentGateway also needs IDbContextFactory<AppDbContext> to construct
+    // (unused by these tests — they never call a method that touches the database).
+    private static ServiceProvider BuildProvider(string environmentName, string secretKey)
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Stripe:SecretKey"] = secretKey,
+                ["Stripe:PublishableKey"] = "pk_test_abc",
+                ["Stripe:WebhookSecret"] = "whsec_abc",
+            })
+            .Build();
+
+        return new ServiceCollection()
+            .AddSingleton<IDbContextFactory<AppDbContext>>(NullDbContextFactory.Instance)
+            .AddMarketplace(configuration, new TestHostEnvironment(environmentName))
+            .BuildServiceProvider();
+    }
+
+    private sealed class NullDbContextFactory : IDbContextFactory<AppDbContext>
+    {
+        public static readonly NullDbContextFactory Instance = new();
+
+        public AppDbContext CreateDbContext() => throw new NotSupportedException("Not exercised by these tests.");
     }
 }

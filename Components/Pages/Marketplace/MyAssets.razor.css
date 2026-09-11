@@ -1,0 +1,39 @@
+/* A 6-column data grid either scrolls horizontally or truncates below
+   ~900px, so this page swaps it for a stacked card per asset instead —
+   requested at exactly 900px rather than MudDataGrid's own Breakpoint
+   parameter, whose presets snap to MudBlazor's fixed 600/960/1280 scale. */
+
+.assets-table {
+    display: none;
+}
+
+.assets-cards {
+    display: block;
+}
+
+.asset-card-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: .75rem 1rem;
+}
+
+.asset-card-stat {
+    display: flex;
+    flex-direction: column;
+    gap: .125rem;
+}
+
+.asset-card-label {
+    font-size: .75rem;
+    color: var(--mud-palette-text-secondary);
+}
+
+@media (min-width: 900px) {
+    .assets-table {
+        display: block;
+    }
+
+    .assets-cards {
+        display: none;
+    }
+}
