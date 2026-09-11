@@ -54,7 +54,7 @@ public sealed class MarketplaceOptionsTests
         Assert.Equal(1_000, options.BuybackSpreadCapCents);
         Assert.Equal(0, options.CommissionBps);
         Assert.Equal(24, options.CatalogPageSize);
-        Assert.Equal("*/10 * * * *", options.PriceRecomputeCron);
+        Assert.Equal("*/1 * * * *", options.PriceRecomputeCron);
     }
 
     [Fact]

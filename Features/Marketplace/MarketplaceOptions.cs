@@ -37,5 +37,5 @@ public sealed class MarketplaceOptions
 
     /// <summary>Cron expression for the recurring price-recompute job.</summary>
     [Required]
-    public string PriceRecomputeCron { get; set; } = "*/10 * * * *";
+    public string PriceRecomputeCron { get; set; } = "*/1 * * * *";
 }
