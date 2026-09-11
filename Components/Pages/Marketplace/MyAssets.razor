@@ -62,6 +62,11 @@ else
                             {
                                 <MudChip T="string" Size="Size.Small" Color="Color.Secondary">listed</MudChip>
                             }
+                            else
+                            {
+                                <MudButton Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary"
+                                           OnClick="@(() => ListAsync(context.Item))">List for resale</MudButton>
+                            }
                             @if (context.Item.CanSellBack)
                             {
                                 <MudButton Size="Size.Small" Variant="Variant.Outlined"
@@ -114,9 +119,14 @@ else
                         <span>@MarketplaceFormat.SignedUsd(row.GrowthLast12MonthsCents)</span>
                     </div>
                 </div>
+                @if (!row.IsListedForResale)
+                {
+                    <MudButton Class="mt-3" FullWidth="true" Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary"
+                               OnClick="@(() => ListAsync(row))">List for resale</MudButton>
+                }
                 @if (row.CanSellBack)
                 {
-                    <MudButton Class="mt-3" FullWidth="true" Size="Size.Small" Variant="Variant.Outlined"
+                    <MudButton Class="mt-2" FullWidth="true" Size="Size.Small" Variant="Variant.Outlined"
                                OnClick="@(() => SellBackAsync(row))">Sell back</MudButton>
                 }
             </MudPaper>
@@ -149,6 +159,22 @@ else
 
         _viewer = new ApplicationUser { Id = id, Email = user.FindFirstValue(ClaimTypes.Email) };
         _rows = await MyAssetsView.ForUserAsync(_viewer);
+    }
+
+    private async Task ListAsync(OwnedAssetRow row)
+    {
+        try
+        {
+            await Actions.ListForResaleAsync(_viewer!, row.Product, default);
+            Snackbar.Add($"Listed {row.Title} for resale.", Severity.Success);
+        }
+        catch (MarketplaceException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Warning);
+        }
+
+        await LoadAsync();
+        StateHasChanged();
     }
 
     private async Task SellBackAsync(OwnedAssetRow row)

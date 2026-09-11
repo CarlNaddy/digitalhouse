@@ -13,10 +13,12 @@ namespace DigitalHouse.Tests.Components;
 
 /// <summary>
 /// <see cref="MyAssets"/> (openspec: add-digital-asset-marketplace, task 13.2):
-/// owned rows show the full certificate id and the trading figures, and the
-/// "Sell back" button appears only when buyback is currently permitted. The
-/// page renders a data-grid view and a card view for the same rows side by
-/// side, toggled by CSS media query alone (no JS breakpoint detection) — bUnit
+/// owned rows show the full certificate id and the trading figures; "List for
+/// resale" appears whenever a row isn't already listed (listing has no
+/// price constraint — see asset-resale spec), and "Sell back" appears only
+/// when buyback is currently permitted (the price-spread cap). The page
+/// renders a data-grid view and a card view for the same rows side by side,
+/// toggled by CSS media query alone (no JS breakpoint detection) — bUnit
 /// doesn't evaluate media queries, so both are present in the markup at once;
 /// tests that need exactly one element scope their query to `.assets-table`.
 /// </summary>
@@ -59,6 +61,37 @@ public sealed class MyAssetsPageTests : MudBlazorTestContext
         var cut = Render<MyAssets>();
 
         Assert.Contains("listed", cut.Markup);
+    }
+
+    [Fact]
+    public void Offers_list_for_resale_regardless_of_buyback_eligibility_but_not_once_already_listed()
+    {
+        var aboveCap = Row(canSellBack: false, isListed: false);
+        var alreadyListed = Row(canSellBack: false, isListed: true);
+        _view.Rows = [aboveCap, alreadyListed];
+
+        var cut = Render<MyAssets>();
+
+        var table = cut.Find(".assets-table");
+        var listButtons = table.QuerySelectorAll("button").Where(b => b.TextContent.Contains("List for resale")).ToList();
+        Assert.Single(listButtons);
+
+        var cards = cut.Find(".assets-cards");
+        var cardListButtons = cards.QuerySelectorAll("button").Where(b => b.TextContent.Contains("List for resale")).ToList();
+        Assert.Single(cardListButtons);
+    }
+
+    [Fact]
+    public async Task Clicking_list_for_resale_calls_the_listing_action()
+    {
+        _view.Rows = [Row(canSellBack: false, isListed: false)];
+        var cut = Render<MyAssets>();
+
+        var table = cut.Find(".assets-table");
+        var button = table.QuerySelectorAll("button").Single(b => b.TextContent.Contains("List for resale"));
+        await button.ClickAsync(new Microsoft.AspNetCore.Components.Web.MouseEventArgs());
+
+        Assert.Contains(_actions.Calls, c => c.StartsWith("List(", StringComparison.Ordinal));
     }
 
     [Fact]
