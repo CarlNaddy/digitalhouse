@@ -1,0 +1,36 @@
+@* Rotatable 3D preview for a glTF/GLB asset, backed by Google's <model-viewer>
+   web component (self-hosted at wwwroot/js/vendor/model-viewer.min.js — see
+   Components/App.razor). Orbit/zoom are handled entirely by the custom
+   element itself; no JS interop calls are needed from Blazor.
+
+   <model-viewer> sets `contain: strict` on its own host element, which — in
+   every current browser — defeats a CSS `aspect-ratio` declared directly on
+   it (the containment's default 300x150 intrinsic size wins instead). So the
+   aspect ratio is sized on a plain wrapper div here, and the element itself
+   just fills that wrapper with width/height:100%. *@
+
+<div class="@Class" style="@($"width:100%;aspect-ratio:1 / 1;position:relative;{Style}")">
+    <model-viewer src="@Src"
+                  alt="@Alt"
+                  style="position:absolute;inset:0;width:100%;height:100%;--poster-color:transparent;"
+                  camera-controls
+                  touch-action="pan-y"
+                  auto-rotate
+                  auto-rotate-delay="0"
+                  interaction-prompt="none"
+                  shadow-intensity="1"
+                  exposure="1.1"
+                  environment-image="neutral">
+    </model-viewer>
+</div>
+
+@code {
+    /// <summary>URL of the glTF/GLB file, typically <c>/api/files/{id}</c>.</summary>
+    [Parameter, EditorRequired] public string Src { get; set; } = "";
+
+    [Parameter] public string Alt { get; set; } = "3D model";
+
+    [Parameter] public string Class { get; set; } = "rounded";
+
+    [Parameter] public string Style { get; set; } = "";
+}

@@ -57,6 +57,10 @@ public class Product
     /// <summary>Gallery images, ordered by <see cref="ProductImage.Position"/>.</summary>
     public ICollection<ProductImage> Images { get; } = [];
 
+    /// <summary>Optional rotatable 3D model for the product-detail page, as a glTF/GLB
+    /// <see cref="StoredFile"/> id. Null when the product has no model.</summary>
+    public Guid? GltfFileId { get; set; }
+
     /// <summary>Current price in whole USD cents — <c>round(CurrentPriceMicros / 10_000)</c>.</summary>
     public long CurrentPriceCents() => (long)Math.Round(CurrentPriceMicros / 10_000m, MidpointRounding.AwayFromZero);
 }

@@ -17,6 +17,7 @@ public enum ViewerAction
 public sealed record ProductViewModel(
     Product Product,
     IReadOnlyList<Guid> ImageFileIds,
+    Guid? GltfFileId,
     long CurrentPriceCents,
     long GrowthLast12MonthsCents,
     string? CurrentOwnerId,
@@ -85,7 +86,7 @@ public sealed class ProductView(
             db, product, viewer, viewerIsOwner, isListed, currentPriceCents, ct);
 
         return new ProductViewModel(
-            product, images, currentPriceCents, growthCents,
+            product, images, product.GltfFileId, currentPriceCents, growthCents,
             currentOwnerId, isMarketplaceHeld, isListed, activeListingId,
             viewerIsOwner, viewerHasReservation, action, canSellBack);
     }

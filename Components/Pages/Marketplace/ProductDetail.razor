@@ -41,19 +41,23 @@ else
 
     <div class="product-layout">
         <div class="product-image">
-            @if (_vm.ImageFileIds.Count > 0)
+            @if (_vm.ImageFileIds.Count > 0 && _vm.GltfFileId is not null)
             {
-                <MudCarousel Class="rounded" Style="width:100%;aspect-ratio:1 / 1"
-                             ShowArrows="@(_vm.ImageFileIds.Count > 1)"
-                             ShowBullets="@(_vm.ImageFileIds.Count > 1)" AutoCycle="false" TData="Guid">
-                    @foreach (var fileId in _vm.ImageFileIds)
-                    {
-                        <MudCarouselItem>
-                            <MudImage Src="@($"/api/files/{fileId}")" Alt="@_vm.Product.Title"
-                                      ObjectFit="ObjectFit.Cover" Class="mud-width-full" Style="height:100%" />
-                        </MudCarouselItem>
-                    }
-                </MudCarousel>
+                <MudToggleGroup T="bool" Value="_showModel" ValueChanged="v => _showModel = v" Size="Size.Small"
+                                Color="Color.Primary" CheckMark="false" SelectionMode="SelectionMode.SingleSelection"
+                                Class="mb-2">
+                    <MudToggleItem Value="false" Text="Photos" />
+                    <MudToggleItem Value="true" Text="3D Model" />
+                </MudToggleGroup>
+                @(_showModel ? RenderModel() : RenderCarousel())
+            }
+            else if (_vm.GltfFileId is not null)
+            {
+                @RenderModel()
+            }
+            else if (_vm.ImageFileIds.Count > 0)
+            {
+                @RenderCarousel()
             }
             else
             {
@@ -133,6 +137,7 @@ else
     private string _axisFormat = "MMM d";
     private string _hoverFormat = "MMM d, HH:mm";
     private ApplicationUser? _buyer;
+    private bool _showModel;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -170,6 +175,21 @@ else
         var user = (await AuthState).User;
         return (user.FindFirstValue(ClaimTypes.NameIdentifier), user.FindFirstValue(ClaimTypes.Email));
     }
+
+    private RenderFragment RenderCarousel() => @<MudCarousel Class="rounded" Style="width:100%;aspect-ratio:1 / 1"
+                                                              ShowArrows="@(_vm!.ImageFileIds.Count > 1)"
+                                                              ShowBullets="@(_vm!.ImageFileIds.Count > 1)" AutoCycle="false" TData="Guid">
+        @foreach (var fileId in _vm!.ImageFileIds)
+        {
+            <MudCarouselItem>
+                <MudImage Src="@($"/api/files/{fileId}")" Alt="@_vm.Product.Title"
+                          ObjectFit="ObjectFit.Cover" Class="mud-width-full" Style="height:100%" />
+            </MudCarouselItem>
+        }
+    </MudCarousel>;
+
+    private RenderFragment RenderModel() => @<ModelViewer Src="@($"/api/files/{_vm!.GltfFileId}")" Alt="@_vm!.Product.Title"
+                                                           Style="width:100%;aspect-ratio:1 / 1" />;
 
     private RenderFragment RenderAction() => _vm!.ViewerAction switch
     {

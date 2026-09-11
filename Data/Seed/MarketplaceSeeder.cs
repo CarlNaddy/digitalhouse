@@ -90,6 +90,15 @@ public static class MarketplaceSeeder
             });
         }
 
+        // The first product also gets a rotatable 3D model, to showcase the
+        // product-detail page's glTF viewer.
+        var diamondBytes = DiamondGltf.Generate();
+        await using (var modelContent = new MemoryStream(diamondBytes))
+        {
+            var storedModel = await fileStore.SaveAsync(modelContent, "diamond.gltf", "model/gltf+json", ct);
+            products[0].GltfFileId = storedModel.Id;
+        }
+
         await db.SaveChangesAsync(ct);
 
         // Bring every cached price onto the curve for "now" (+ a first snapshot).
